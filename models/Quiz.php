@@ -127,4 +127,30 @@ class Quiz {
             'secondary_mood' => $moodEffects[1]
         ];
     }
+
+    public function getQuizStatistics() {
+        $stmt = $this->pdo->query("
+            SELECT 
+                COUNT(*) as total_quizzes,
+                COUNT(DISTINCT user_id) as unique_users,
+                DATE(created_at) as quiz_date
+            FROM quiz_results 
+            GROUP BY DATE(created_at)
+            ORDER BY quiz_date DESC
+        ");
+        return $stmt->fetchAll();
+    }
+
+    public function getPopularPreferences() {
+        $stmt = $this->pdo->query("
+            SELECT 
+                JSON_EXTRACT(answers, '$.preferred_scents') as scent_preference,
+                JSON_EXTRACT(answers, '$.mood_goal') as mood_preference,
+                COUNT(*) as preference_count
+            FROM quiz_results
+            GROUP BY scent_preference, mood_preference
+            ORDER BY preference_count DESC
+        ");
+        return $stmt->fetchAll();
+    }
 }

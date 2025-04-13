@@ -5,42 +5,53 @@
 -- First, ensure we're using the correct database
 USE the_scent;
 
+-- Drop and recreate product_attributes table
+DROP TABLE IF EXISTS product_attributes;
+CREATE TABLE IF NOT EXISTS product_attributes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    scent_type ENUM('floral', 'woody', 'citrus', 'oriental', 'fresh') NOT NULL,
+    mood_effect ENUM('calming', 'energizing', 'focusing', 'balancing') NOT NULL,
+    intensity_level ENUM('light', 'medium', 'strong') NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
 -- Clear existing test data (if any)
 DELETE FROM product_attributes WHERE product_id > 0;
 DELETE FROM products WHERE id > 0;
 ALTER TABLE products AUTO_INCREMENT = 1;
 
 -- Insert product categories if not exists
-INSERT IGNORE INTO categories (name, slug) VALUES 
-('Essential Oils', 'essential-oils'),
-('Natural Soaps', 'natural-soaps'),
-('Diffuser Blends', 'diffuser-blends'),
-('Gift Sets', 'gift-sets');
+INSERT IGNORE INTO categories (name, description) VALUES 
+('Essential Oils', 'Pure essential oils for aromatherapy and wellness'),
+('Natural Soaps', 'Handcrafted natural soaps with therapeutic properties'),
+('Diffuser Blends', 'Pre-mixed blends for aromatherapy diffusers'),
+('Gift Sets', 'Curated collections of our premium products');
 
 -- Insert test products
 INSERT INTO products 
 (name, description, price, image, category_id, stock, is_featured) 
 VALUES
 -- Essential Oils (Category 1)
-('Lavender Serenity Oil', 'Pure lavender essential oil for relaxation and calm.', 24.99, '/images/products/lavender-oil.jpg', 1, 100, 1),
-('Citrus Burst Oil', 'Energizing blend of orange, lemon, and grapefruit oils.', 19.99, '/images/products/citrus-oil.jpg', 1, 85, 1),
-('Forest Pine Oil', 'Refreshing pine essential oil for focus and clarity.', 22.99, '/images/products/pine-oil.jpg', 1, 75, 0),
-('Rose Harmony Oil', 'Premium rose essential oil for emotional balance.', 29.99, '/images/products/rose-oil.jpg', 1, 50, 1),
-('Eucalyptus Fresh Oil', 'Invigorating eucalyptus oil for energy and vitality.', 18.99, '/images/products/eucalyptus-oil.jpg', 1, 90, 0),
+('Lavender Serenity Oil', 'Pure lavender essential oil for relaxation and calm.', 24.99, 'https://placehold.co/600x600/e9ecef/495057?text=Lavender+Oil', 1, 100, 1),
+('Citrus Burst Oil', 'Energizing blend of orange, lemon, and grapefruit oils.', 19.99, 'https://placehold.co/600x600/e9ecef/495057?text=Citrus+Oil', 1, 85, 1),
+('Forest Pine Oil', 'Refreshing pine essential oil for focus and clarity.', 22.99, 'https://placehold.co/600x600/e9ecef/495057?text=Pine+Oil', 1, 75, 0),
+('Rose Harmony Oil', 'Premium rose essential oil for emotional balance.', 29.99, 'https://placehold.co/600x600/e9ecef/495057?text=Rose+Oil', 1, 50, 1),
+('Eucalyptus Fresh Oil', 'Invigorating eucalyptus oil for energy and vitality.', 18.99, 'https://placehold.co/600x600/e9ecef/495057?text=Eucalyptus+Oil', 1, 90, 0),
 
 -- Natural Soaps (Category 2)
-('Lavender Dreams Soap', 'Calming lavender soap with natural oils.', 12.99, '/images/products/lavender-soap.jpg', 2, 150, 1),
-('Citrus Morning Soap', 'Energizing citrus soap for a fresh start.', 11.99, '/images/products/citrus-soap.jpg', 2, 120, 1),
-('Forest Walk Soap', 'Woodsy soap with pine and cedar notes.', 12.99, '/images/products/forest-soap.jpg', 2, 100, 0),
-('Rose Petal Soap', 'Delicate rose-scented soap for gentle cleansing.', 13.99, '/images/products/rose-soap.jpg', 2, 80, 1),
-('Mountain Air Soap', 'Refreshing soap with mint and eucalyptus.', 11.99, '/images/products/mountain-soap.jpg', 2, 110, 0),
+('Lavender Dreams Soap', 'Calming lavender soap with natural oils.', 12.99, 'https://placehold.co/600x600/e9ecef/495057?text=Lavender+Soap', 2, 150, 1),
+('Citrus Morning Soap', 'Energizing citrus soap for a fresh start.', 11.99, 'https://placehold.co/600x600/e9ecef/495057?text=Citrus+Soap', 2, 120, 1),
+('Forest Walk Soap', 'Woodsy soap with pine and cedar notes.', 12.99, 'https://placehold.co/600x600/e9ecef/495057?text=Forest+Soap', 2, 100, 0),
+('Rose Petal Soap', 'Delicate rose-scented soap for gentle cleansing.', 13.99, 'https://placehold.co/600x600/e9ecef/495057?text=Rose+Soap', 2, 80, 1),
+('Mountain Air Soap', 'Refreshing soap with mint and eucalyptus.', 11.99, 'https://placehold.co/600x600/e9ecef/495057?text=Mountain+Soap', 2, 110, 0),
 
 -- Diffuser Blends (Category 3)
-('Peaceful Night Blend', 'Soothing blend for restful sleep.', 27.99, '/images/products/peaceful-blend.jpg', 3, 60, 1),
-('Morning Energy Blend', 'Uplifting blend for morning motivation.', 25.99, '/images/products/energy-blend.jpg', 3, 70, 1),
-('Focus Master Blend', 'Concentration-enhancing essential oil blend.', 26.99, '/images/products/focus-blend.jpg', 3, 65, 0),
-('Stress Relief Blend', 'Calming blend for stress reduction.', 28.99, '/images/products/stress-blend.jpg', 3, 55, 1),
-('Balance & Harmony', 'Centering blend for emotional balance.', 29.99, '/images/products/balance-blend.jpg', 3, 45, 0);
+('Peaceful Night Blend', 'Soothing blend for restful sleep.', 27.99, 'https://placehold.co/600x600/e9ecef/495057?text=Peaceful+Blend', 3, 60, 1),
+('Morning Energy Blend', 'Uplifting blend for morning motivation.', 25.99, 'https://placehold.co/600x600/e9ecef/495057?text=Energy+Blend', 3, 70, 1),
+('Focus Master Blend', 'Concentration-enhancing essential oil blend.', 26.99, 'https://placehold.co/600x600/e9ecef/495057?text=Focus+Blend', 3, 65, 0),
+('Stress Relief Blend', 'Calming blend for stress reduction.', 28.99, 'https://placehold.co/600x600/e9ecef/495057?text=Stress+Relief', 3, 55, 1),
+('Balance & Harmony', 'Centering blend for emotional balance.', 29.99, 'https://placehold.co/600x600/e9ecef/495057?text=Balance+Blend', 3, 45, 0);
 
 -- Insert product attributes for quiz matching
 INSERT INTO product_attributes 

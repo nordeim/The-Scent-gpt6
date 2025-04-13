@@ -12,7 +12,14 @@ class Product {
     }
     
     public function getFeatured() {
-        $stmt = $this->pdo->query("SELECT * FROM products WHERE featured = 1 ORDER BY id DESC LIMIT 4");
+        $stmt = $this->pdo->query("
+            SELECT p.*, c.name as category_name, pa.scent_type, pa.mood_effect 
+            FROM products p
+            JOIN categories c ON p.category_id = c.id
+            JOIN product_attributes pa ON p.id = pa.product_id
+            WHERE p.is_featured = 1
+            LIMIT 6
+        ");
         return $stmt->fetchAll();
     }
     

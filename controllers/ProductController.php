@@ -6,7 +6,6 @@ function showHomePage() {
     $productModel = new Product($pdo);
     $featuredProducts = $productModel->getFeatured();
     
-    // Pass data to view
     $pageTitle = "The Scent - Premium Aromatherapy Products";
     require_once __DIR__ . '/../views/home.php';
 }

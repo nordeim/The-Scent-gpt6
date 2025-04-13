@@ -1,8 +1,23 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Debug output
+var_dump([
+    'DB_HOST' => defined('DB_HOST') ? DB_HOST : 'not defined',
+    'DB_NAME' => defined('DB_NAME') ? DB_NAME : 'not defined',
+    'DB_USER' => defined('DB_USER') ? DB_USER : 'not defined'
+]);
+
 session_start();
 
-// Load configuration and core files
+// Load configuration first
+require_once __DIR__ . '/../config.php';
+
+// Then load database connection
 require_once __DIR__ . '/../includes/db.php';
+
+// Then load other dependencies
 require_once __DIR__ . '/../includes/auth.php';
 
 // Load controllers
