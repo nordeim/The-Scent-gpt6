@@ -443,8 +443,8 @@ This project wouldn’t be possible without:
 
 ### 📘 Related Documentation
 
-- [`detailed_technical_design_specification.md`](./detailed_technical_design_specification.md)
-- [`detailed_deployment_guide.md`](./detailed_deployment_guide.md)
+- [`technical_design_specification.md`](./technical_design_specification.md)
+- [`deployment_guide.md`](./deployment_guide.md)
 
 ### 🧪 Testing Scenarios
 
