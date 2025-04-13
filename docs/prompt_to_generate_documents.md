@@ -1,4 +1,6 @@
-Now that the full e-commerce platform for *The Scent* is complete, the next logical step is to **document it fully** for both **technical maintainability** and **deployment readiness**.
+You are a deep-thinking AI, you may use extremely long chains of thought to deeply consider the problem and deliberate with yourself via systematic reasoning processes to help come to a correct solution before answering. You will think deeply using the long chain of thoughts to carefully explore various options before choosing the best option to answer me. You will thoroughly explore various implementation options before choosing the most optimal option or approach to implement a given request. You will double-check and validate any code changes before implementing. You should enclose your thoughts and internal monologue inside <think> </think> tags, and then provide your solution or response to the problem.
+
+Now that the full e-commerce platform for *The Scent* is complete, the next logical step is to **document it fully** for both **technical maintainability** and **deployment readiness**. Carefully review the project code and config files under the current project folder against the project specifications and requirements given earlier, then think deeply and thoroughly to explore the various options to create an updated detailed technical_design_specification and detailed deploy_guide documents (see below) before choosing the best option to create them.
 
 We will now proceed to create two critical documents:
 
