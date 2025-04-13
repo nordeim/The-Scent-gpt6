@@ -50,9 +50,23 @@ function addToCart() {
     
     initCart();
     
+    // Check stock availability
+    global $pdo;
+    $productModel = new Product($pdo);
+    if (!$productModel->isInStock($productId, $quantity)) {
+        echo json_encode(['success' => false, 'message' => 'Insufficient stock']);
+        return;
+    }
+    
     // Add or update quantity
     if (isset($_SESSION['cart'][$productId])) {
-        $_SESSION['cart'][$productId] += $quantity;
+        $newQuantity = $_SESSION['cart'][$productId] + $quantity;
+        // Recheck stock for total quantity
+        if (!$productModel->isInStock($productId, $newQuantity)) {
+            echo json_encode(['success' => false, 'message' => 'Insufficient stock for requested quantity']);
+            return;
+        }
+        $_SESSION['cart'][$productId] = $newQuantity;
     } else {
         $_SESSION['cart'][$productId] = $quantity;
     }
@@ -73,21 +87,33 @@ function updateCart() {
     }
     
     $updates = $_POST['updates'] ?? [];
+    global $pdo;
+    $productModel = new Product($pdo);
+    $stockErrors = [];
     
     foreach ($updates as $productId => $quantity) {
         $quantity = (int)$quantity;
         if ($quantity > 0) {
+            // Validate stock
+            if (!$productModel->isInStock($productId, $quantity)) {
+                $product = $productModel->getById($productId);
+                $stockErrors[] = "{$product['name']} has insufficient stock";
+                continue;
+            }
             $_SESSION['cart'][$productId] = $quantity;
         } else {
             unset($_SESSION['cart'][$productId]);
         }
     }
     
-    echo json_encode([
-        'success' => true,
-        'message' => 'Cart updated',
-        'cartCount' => array_sum($_SESSION['cart'])
-    ]);
+    $response = [
+        'success' => empty($stockErrors),
+        'message' => empty($stockErrors) ? 'Cart updated' : 'Some items have insufficient stock',
+        'cartCount' => array_sum($_SESSION['cart']),
+        'errors' => $stockErrors
+    ];
+    
+    echo json_encode($response);
 }
 
 function removeFromCart() {
@@ -127,4 +153,19 @@ function clearCart() {
     } else {
         header('Location: index.php?page=cart');
     }
+}
+
+function validateCartStock() {
+    global $pdo;
+    $productModel = new Product($pdo);
+    $errors = [];
+    
+    foreach ($_SESSION['cart'] as $productId => $quantity) {
+        if (!$productModel->isInStock($productId, $quantity)) {
+            $product = $productModel->getById($productId);
+            $errors[] = "{$product['name']} has insufficient stock";
+        }
+    }
+    
+    return $errors;
 }

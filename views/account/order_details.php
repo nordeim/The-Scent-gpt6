@@ -145,26 +145,32 @@
                                 <span>Subtotal</span>
                                 <span>$<?= number_format($order['subtotal'], 2) ?></span>
                             </div>
-                            <div class="summary-row">
-                                <span>Shipping</span>
-                                <span>$<?= number_format($order['shipping_cost'], 2) ?></span>
-                            </div>
                             <?php if ($order['discount_amount'] > 0): ?>
                                 <div class="summary-row discount">
-                                    <span>Discount</span>
+                                    <span>
+                                        Discount 
+                                        <?php if ($order['coupon_code']): ?>
+                                            <div class="coupon-tag">
+                                                <i class="fas fa-tag"></i>
+                                                <?= htmlspecialchars($order['coupon_code']) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </span>
                                     <span>-$<?= number_format($order['discount_amount'], 2) ?></span>
                                 </div>
                             <?php endif; ?>
+                            <div class="summary-row">
+                                <span>Shipping</span>
+                                <span><?= $order['shipping_cost'] > 0 ? '$' . number_format($order['shipping_cost'], 2) : 'FREE' ?></span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Tax</span>
+                                <span>$<?= number_format($order['tax_amount'], 2) ?></span>
+                            </div>
                             <div class="summary-row total">
                                 <span>Total</span>
                                 <span>$<?= number_format($order['total_amount'], 2) ?></span>
                             </div>
-                            <?php if (!empty($order['coupon_code'])): ?>
-                                <div class="coupon-applied">
-                                    <i class="fas fa-tag"></i>
-                                    Coupon applied: <?= htmlspecialchars($order['coupon_code']) ?>
-                                </div>
-                            <?php endif; ?>
                         </div>
                     </div>
                     
@@ -226,5 +232,27 @@
         </div>
     </div>
 </section>
+
+<style>
+.coupon-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background-color: #f3f4f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    color: #374151;
+    margin-left: 0.5rem;
+}
+
+.coupon-tag i {
+    color: #059669;
+}
+
+.summary-row.discount {
+    color: #059669;
+}
+</style>
 
 <?php require_once __DIR__ . '/../layout/footer.php'; ?>

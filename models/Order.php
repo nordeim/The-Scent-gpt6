@@ -61,4 +61,32 @@ class Order {
         ");
         return $stmt->execute([$status, $orderId]);
     }
+
+    public function updatePaymentIntent($orderId, $paymentIntentId) {
+        $stmt = $this->pdo->prepare("
+            UPDATE orders 
+            SET payment_intent_id = ? 
+            WHERE id = ?
+        ");
+        return $stmt->execute([$paymentIntentId, $orderId]);
+    }
+    
+    public function updatePaymentStatus($orderId, $status, $stripeCustomerId = null) {
+        $stmt = $this->pdo->prepare("
+            UPDATE orders 
+            SET payment_status = ?,
+                paid_at = CASE WHEN ? = 'completed' THEN NOW() ELSE NULL END,
+                stripe_customer_id = COALESCE(?, stripe_customer_id)
+            WHERE id = ?
+        ");
+        return $stmt->execute([$status, $status, $stripeCustomerId, $orderId]);
+    }
+    
+    public function getByPaymentIntent($paymentIntentId) {
+        $stmt = $this->pdo->prepare("
+            SELECT * FROM orders WHERE payment_intent_id = ?
+        ");
+        $stmt->execute([$paymentIntentId]);
+        return $stmt->fetch();
+    }
 }

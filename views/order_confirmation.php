@@ -55,20 +55,30 @@
                             <span class="item-price">$<?= number_format($item['price'] * $item['quantity'], 2) ?></span>
                         </div>
                     <?php endforeach; ?>
-                    
-                    <div class="summary-totals">
-                        <div class="summary-row">
-                            <span>Subtotal:</span>
-                            <span>$<?= number_format($order['total_amount'], 2) ?></span>
+                </div>
+                
+                <div class="summary-totals">
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span>$<?= number_format($order['subtotal'], 2) ?></span>
+                    </div>
+                    <?php if ($order['discount_amount'] > 0): ?>
+                        <div class="summary-row discount">
+                            <span>Discount (<?= htmlspecialchars($order['coupon_code']) ?>):</span>
+                            <span>-$<?= number_format($order['discount_amount'], 2) ?></span>
                         </div>
-                        <div class="summary-row">
-                            <span>Shipping:</span>
-                            <span>FREE</span>
-                        </div>
-                        <div class="summary-row total">
-                            <span>Total:</span>
-                            <span>$<?= number_format($order['total_amount'], 2) ?></span>
-                        </div>
+                    <?php endif; ?>
+                    <div class="summary-row">
+                        <span>Shipping:</span>
+                        <span><?= $order['shipping_cost'] > 0 ? '$' . number_format($order['shipping_cost'], 2) : 'FREE' ?></span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tax:</span>
+                        <span>$<?= number_format($order['tax_amount'], 2) ?></span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total:</span>
+                        <span>$<?= number_format($order['total_amount'], 2) ?></span>
                     </div>
                 </div>
             </div>

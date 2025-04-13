@@ -175,4 +175,53 @@ class Product {
         $stmt->execute([$category, $productId, $limit]);
         return $stmt->fetchAll();
     }
+
+    public function updateStock($id, $quantity) {
+        $stmt = $this->pdo->prepare("
+            UPDATE products 
+            SET stock_quantity = stock_quantity + ? 
+            WHERE id = ?
+        ");
+        return $stmt->execute([$quantity, $id]);
+    }
+    
+    public function checkStock($id) {
+        $stmt = $this->pdo->prepare("
+            SELECT stock_quantity, backorder_allowed, low_stock_threshold 
+            FROM products 
+            WHERE id = ?
+        ");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+    
+    public function isInStock($id, $requestedQuantity = 1) {
+        $stock = $this->checkStock($id);
+        if (!$stock) {
+            return false;
+        }
+        
+        return $stock['backorder_allowed'] || $stock['stock_quantity'] >= $requestedQuantity;
+    }
+    
+    public function getLowStockProducts($threshold = null) {
+        $sql = "
+            SELECT * FROM products 
+            WHERE stock_quantity <= COALESCE(?, low_stock_threshold)
+            ORDER BY stock_quantity ASC
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$threshold]);
+        return $stmt->fetchAll();
+    }
+    
+    public function updateStockSettings($id, $threshold, $backorderAllowed) {
+        $stmt = $this->pdo->prepare("
+            UPDATE products 
+            SET low_stock_threshold = ?,
+                backorder_allowed = ?
+            WHERE id = ?
+        ");
+        return $stmt->execute([$threshold, $backorderAllowed, $id]);
+    }
 }

@@ -34,6 +34,7 @@ Check potential areas for improvements:
 3. Coupon system (structure exists but needs implementation)
 4. Tax calculation (not currently implemented)
 
+Let us first search the workspace to understand the current state. Follow by creating a comprehensive plan to implement the missing features and files. Let us think systematically about what we need to do.
 
 ---
 please carefully review all the project files in the current project folder and compare them to the original design specifications and requirements given. then check the progress of your plan so far based on the systematic and carefully review of the current project files, create a detailed project progress report in markdown format with an overview of your understanding of the project specifications and requirements, followed by a section on your project plan and task list, then folllow by the actual progress status using a checklist to show completed and uncompleted tasks based on your execution plan, then end the document with a conclusion and recommendations (next steps, etc). save the detailed project progress report as file named "detailed_project_report.md" under the project root folder.
@@ -49,3 +50,8 @@ remember to think deeply and systematically via long chain of thoughts to thorou
 yes, please proceed to complete creating all the missing features and files as per your suggestions.
 
 remember to think deeply and systematically via long chain of thoughts to thoroughly and carefully explore the best possible implementation option to implement your proposed changes, then come up with a detailed action plan before executing according to the plan thus created step-by-step cautiously.
+
+---
+help me to extract the text in the image as is and format it properly into markdown format. take care not to change its content or meaning. use ```markdown ``` tags to enclose your generated text.
+
+

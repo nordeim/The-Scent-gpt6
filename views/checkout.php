@@ -1,5 +1,8 @@
 <?php require_once 'layout/header.php'; ?>
 
+<!-- Add Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+
 <section class="checkout-section">
     <div class="container">
         <div class="checkout-container" data-aos="fade-up">
@@ -67,6 +70,20 @@
                 <!-- Order Summary -->
                 <div class="order-summary">
                     <h2>Order Summary</h2>
+                    
+                    <!-- Coupon Code Section -->
+                    <div class="coupon-section">
+                        <div class="form-group">
+                            <label for="coupon_code">Have a coupon?</label>
+                            <div class="coupon-input">
+                                <input type="text" id="coupon_code" name="coupon_code" 
+                                       placeholder="Enter coupon code">
+                                <button type="button" id="apply-coupon" class="btn-secondary">Apply</button>
+                            </div>
+                            <div id="coupon-message" class="hidden"></div>
+                        </div>
+                    </div>
+                    
                     <div class="summary-items">
                         <?php foreach ($cartItems as $item): ?>
                             <div class="summary-item">
@@ -82,11 +99,19 @@
                     <div class="summary-totals">
                         <div class="summary-row">
                             <span>Subtotal:</span>
-                            <span>$<?= number_format($total, 2) ?></span>
+                            <span>$<?= number_format($subtotal, 2) ?></span>
                         </div>
                         <div class="summary-row">
                             <span>Shipping:</span>
-                            <span>FREE</span>
+                            <span><?= $shipping_cost > 0 ? '$' . number_format($shipping_cost, 2) : 'FREE' ?></span>
+                        </div>
+                        <div class="summary-row discount hidden">
+                            <span>Discount:</span>
+                            <span>-$<span id="discount-amount">0.00</span></span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Tax (<span id="tax-rate"><?= $tax_rate_formatted ?></span>):</span>
+                            <span id="tax-amount">$<?= number_format($tax_amount, 2) ?></span>
                         </div>
                         <div class="summary-row total">
                             <span>Total:</span>
@@ -96,50 +121,18 @@
                     
                     <div class="payment-section">
                         <h3>Payment Method</h3>
-                        <div class="payment-options">
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="credit_card" checked>
-                                <span class="option-content">
-                                    <i class="fas fa-credit-card"></i>
-                                    Credit Card
-                                </span>
-                            </label>
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="paypal">
-                                <span class="option-content">
-                                    <i class="fab fa-paypal"></i>
-                                    PayPal
-                                </span>
-                            </label>
-                        </div>
-                        
-                        <div id="creditCardForm" class="payment-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="card_number">Card Number</label>
-                                    <input type="text" id="card_number" placeholder="1234 5678 9012 3456">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="card_expiry">Expiry Date</label>
-                                    <input type="text" id="card_expiry" placeholder="MM/YY">
-                                </div>
-                                <div class="form-group">
-                                    <label for="card_cvv">CVV</label>
-                                    <input type="text" id="card_cvv" placeholder="123">
-                                </div>
-                            </div>
-                        </div>
+                        <div id="payment-element"></div>
+                        <div id="payment-message" class="hidden"></div>
                     </div>
                     
-                    <button type="submit" form="checkoutForm" class="btn-primary place-order">
-                        Place Order
+                    <button type="submit" id="submit-button" class="btn-primary place-order">
+                        <span id="button-text">Pay Now</span>
+                        <div class="spinner hidden" id="spinner"></div>
                     </button>
                     
                     <div class="secure-checkout">
                         <i class="fas fa-lock"></i>
-                        Secure Checkout
+                        Secure Checkout via Stripe
                     </div>
                 </div>
             </div>
@@ -148,51 +141,258 @@
 </section>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('checkoutForm');
-    const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
-    const creditCardForm = document.getElementById('creditCardForm');
+// Initialize Stripe
+const stripe = Stripe('<?= STRIPE_PUBLIC_KEY ?>');
+let elements;
+let paymentElement;
+
+// Add real-time tax calculation when country/state changes
+document.getElementById('shipping_country').addEventListener('change', updateTax);
+document.getElementById('shipping_state').addEventListener('change', updateTax);
+
+async function updateTax() {
+    const country = document.getElementById('shipping_country').value;
+    const state = document.getElementById('shipping_state').value;
     
-    // Handle payment method toggle
-    paymentOptions.forEach(option => {
-        option.addEventListener('change', function() {
-            if (this.value === 'credit_card') {
-                creditCardForm.style.display = 'block';
-            } else {
-                creditCardForm.style.display = 'none';
-            }
-        });
-    });
+    if (!country) return;
     
-    // Form validation
-    form.addEventListener('submit', function(e) {
-        const required = [
-            'shipping_name',
-            'shipping_email',
-            'shipping_address',
-            'shipping_city',
-            'shipping_state',
-            'shipping_zip',
-            'shipping_country'
-        ];
-        
-        let valid = true;
-        required.forEach(field => {
-            const input = document.getElementById(field);
-            if (!input.value.trim()) {
-                valid = false;
-                input.classList.add('error');
-            } else {
-                input.classList.remove('error');
-            }
+    try {
+        const response = await fetch('index.php?page=checkout&action=calculate-tax', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country, state })
         });
         
-        if (!valid) {
-            e.preventDefault();
-            alert('Please fill in all required fields.');
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('tax-rate').textContent = data.tax_rate_formatted;
+            document.getElementById('tax-amount').textContent = '$' + data.tax_amount;
+            document.querySelector('.summary-row.total span:last-child').textContent = 
+                '$' + data.total;
+        }
+    } catch (e) {
+        console.error('Error updating tax:', e);
+    }
+}
+
+async function initialize() {
+    try {
+        const response = await fetch('index.php?page=payment&action=create-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: <?= $total ?>,
+                currency: 'usd'
+            })
+        });
+        
+        const { clientSecret } = await response.json();
+        
+        const options = {
+            clientSecret,
+            appearance: {
+                theme: 'stripe',
+                // Customize to match your site's design
+                variables: {
+                    colorPrimary: '#6366f1',
+                    colorBackground: '#ffffff',
+                    colorText: '#1f2937',
+                    colorDanger: '#ef4444',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    borderRadius: '0.5rem'
+                }
+            }
+        };
+        
+        elements = stripe.elements(options);
+        paymentElement = elements.create('payment');
+        paymentElement.mount('#payment-element');
+    } catch (e) {
+        console.error('Error:', e);
+        document.getElementById('payment-message').textContent = 'Failed to initialize payment form.';
+    }
+}
+
+document.getElementById('checkoutForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    setLoading(true);
+    
+    // Validate shipping fields
+    const requiredFields = [
+        'shipping_name',
+        'shipping_email',
+        'shipping_address',
+        'shipping_city',
+        'shipping_state',
+        'shipping_zip',
+        'shipping_country'
+    ];
+    
+    let valid = true;
+    requiredFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (!input.value.trim()) {
+            valid = false;
+            input.classList.add('error');
+        } else {
+            input.classList.remove('error');
         }
     });
+    
+    if (!valid) {
+        setLoading(false);
+        alert('Please fill in all required fields.');
+        return;
+    }
+    
+    const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+            return_url: window.location.origin + '/index.php?page=order_confirmation'
+        }
+    });
+    
+    if (error) {
+        const messageContainer = document.getElementById('payment-message');
+        messageContainer.textContent = error.message;
+        messageContainer.classList.remove('hidden');
+        setLoading(false);
+    }
 });
-</script>
+
+document.getElementById('apply-coupon').addEventListener('click', async function() {
+    const couponCode = document.getElementById('coupon_code').value.trim();
+    if (!couponCode) {
+        showCouponMessage('Please enter a coupon code', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('index.php?page=checkout&action=apply-coupon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: couponCode })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showCouponMessage(data.message, 'success');
+            updateOrderSummary(data);
+        } else {
+            showCouponMessage(data.message, 'error');
+            removeCouponDiscount();
+        }
+    } catch (e) {
+        console.error('Error:', e);
+        showCouponMessage('Failed to apply coupon', 'error');
+    }
+});
+
+function showCouponMessage(message, type) {
+    const messageEl = document.getElementById('coupon-message');
+    messageEl.textContent = message;
+    messageEl.className = `coupon-message ${type}`;
+    messageEl.classList.remove('hidden');
+}
+
+function updateOrderSummary(data) {
+    const discountRow = document.querySelector('.summary-row.discount');
+    const discountAmount = document.getElementById('discount-amount');
+    const total = document.querySelector('.summary-row.total span:last-child');
+    
+    if (data.discount_amount > 0) {
+        discountRow.classList.remove('hidden');
+        discountAmount.textContent = data.discount_amount;
+    } else {
+        discountRow.classList.add('hidden');
+    }
+    
+    total.textContent = '$' + data.total;
+}
+
+function removeCouponDiscount() {
+    document.querySelector('.summary-row.discount').classList.add('hidden');
+    document.getElementById('discount-amount').textContent = '0.00';
+    // Recalculate total without discount
+    updateTax();
+}
+
+function setLoading(isLoading) {
+    const submitButton = document.getElementById('submit-button');
+    const spinner = document.getElementById('spinner');
+    const buttonText = document.getElementById('button-text');
+    
+    if (isLoading) {
+        submitButton.disabled = true;
+        spinner.classList.remove('hidden');
+        buttonText.classList.add('hidden');
+    } else {
+        submitButton.disabled = false;
+        spinner.classList.add('hidden');
+        buttonText.classList.remove('hidden');
+    }
+}
+
+initialize();</script>
+
+<style>
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.hidden {
+    display: none;
+}
+
+#payment-message {
+    color: #ef4444;
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+#payment-element {
+    margin-bottom: 1.5rem;
+}
+
+.coupon-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+}
+
+.coupon-input {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.coupon-message {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.coupon-message.success {
+    color: #059669;
+}
+
+.coupon-message.error {
+    color: #dc2626;
+}
+
+.summary-row.discount {
+    color: #059669;
+}
+</style>
 
 <?php require_once 'layout/footer.php'; ?>
