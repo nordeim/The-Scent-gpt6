@@ -1,0 +1,178 @@
+<?php
+class Product {
+    private $pdo;
+    
+    public function __construct($pdo) {
+        $this->pdo = $pdo;
+    }
+    
+    public function getAll() {
+        $stmt = $this->pdo->query("SELECT * FROM products ORDER BY id DESC");
+        return $stmt->fetchAll();
+    }
+    
+    public function getFeatured() {
+        $stmt = $this->pdo->query("SELECT * FROM products WHERE featured = 1 ORDER BY id DESC LIMIT 4");
+        return $stmt->fetchAll();
+    }
+    
+    public function getById($id) {
+        $stmt = $this->pdo->prepare("SELECT * FROM products WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+    
+    public function getByCategory($category) {
+        $stmt = $this->pdo->prepare("SELECT * FROM products WHERE category = ? ORDER BY id DESC");
+        $stmt->execute([$category]);
+        return $stmt->fetchAll();
+    }
+    
+    public function create($data) {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO products (name, description, price, category, image_url, featured)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        return $stmt->execute([
+            $data['name'],
+            $data['description'],
+            $data['price'],
+            $data['category'],
+            $data['image_url'],
+            $data['featured'] ?? 0
+        ]);
+    }
+    
+    public function update($id, $data) {
+        $stmt = $this->pdo->prepare("
+            UPDATE products 
+            SET name = ?, description = ?, price = ?, 
+                category = ?, image_url = ?, featured = ?
+            WHERE id = ?
+        ");
+        return $stmt->execute([
+            $data['name'],
+            $data['description'],
+            $data['price'],
+            $data['category'],
+            $data['image_url'],
+            $data['featured'] ?? 0,
+            $id
+        ]);
+    }
+    
+    public function delete($id) {
+        $stmt = $this->pdo->prepare("DELETE FROM products WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+    
+    public function search($query) {
+        $stmt = $this->pdo->prepare("
+            SELECT * FROM products 
+            WHERE name LIKE ? OR description LIKE ?
+            ORDER BY id DESC
+        ");
+        $searchTerm = "%{$query}%";
+        $stmt->execute([$searchTerm, $searchTerm]);
+        return $stmt->fetchAll();
+    }
+    
+    public function getAllCategories() {
+        $stmt = $this->pdo->query("
+            SELECT DISTINCT category 
+            FROM products 
+            ORDER BY category ASC
+        ");
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+    
+    public function getFiltered($conditions = [], $params = [], $sortBy = 'name_asc') {
+        $sql = "SELECT * FROM products";
+        
+        if (!empty($conditions)) {
+            $sql .= " WHERE " . implode(" AND ", $conditions);
+        }
+        
+        // Add sorting
+        switch ($sortBy) {
+            case 'price_asc':
+                $sql .= " ORDER BY price ASC";
+                break;
+            case 'price_desc':
+                $sql .= " ORDER BY price DESC";
+                break;
+            case 'name_desc':
+                $sql .= " ORDER BY name DESC";
+                break;
+            case 'name_asc':
+            default:
+                $sql .= " ORDER BY name ASC";
+        }
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+    
+    public function getPriceRange() {
+        $stmt = $this->pdo->query("
+            SELECT MIN(price) as min_price, MAX(price) as max_price 
+            FROM products
+        ");
+        return $stmt->fetch();
+    }
+    
+    public function getProductsByIds($ids) {
+        if (empty($ids)) {
+            return [];
+        }
+        
+        $placeholders = str_repeat('?,', count($ids) - 1) . '?';
+        $stmt = $this->pdo->prepare("
+            SELECT * FROM products 
+            WHERE id IN ($placeholders)
+            ORDER BY FIELD(id, $placeholders)
+        ");
+        
+        // Double the IDs array since we need it twice in the query
+        $params = array_merge($ids, $ids);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+    
+    public function searchWithFilters($query, $category = null, $minPrice = null, $maxPrice = null) {
+        $conditions = ["(name LIKE ? OR description LIKE ?)"]; 
+        $params = ["%$query%", "%$query%"];
+        
+        if ($category) {
+            $conditions[] = "category = ?";
+            $params[] = $category;
+        }
+        
+        if ($minPrice !== null) {
+            $conditions[] = "price >= ?";
+            $params[] = $minPrice;
+        }
+        
+        if ($maxPrice !== null) {
+            $conditions[] = "price <= ?";
+            $params[] = $maxPrice;
+        }
+        
+        $sql = "SELECT * FROM products WHERE " . implode(" AND ", $conditions);
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+    
+    public function getRelatedProducts($productId, $category, $limit = 4) {
+        $stmt = $this->pdo->prepare("
+            SELECT * FROM products 
+            WHERE category = ? AND id != ?
+            ORDER BY RAND()
+            LIMIT ?
+        ");
+        $stmt->execute([$category, $productId, $limit]);
+        return $stmt->fetchAll();
+    }
+}
