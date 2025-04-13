@@ -257,7 +257,7 @@ chown -R www-data:www-data public/uploads
 
 ## 🚀 Deployment Guide Summary
 
-See [`detailed_deployment_guide.md`](detailed_deployment_guide.md) for full instructions.
+See [`deployment_guide.md`](deployment_guide.md) for full instructions.
 
 ### Basic LAMP Deployment
 
