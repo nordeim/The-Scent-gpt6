@@ -73,6 +73,8 @@ yes, please proceed to complete creating all the missing features and files as p
 remember to think deeply and systematically via long chain of thoughts to thoroughly and carefully explore the best possible implementation option to implement your proposed changes, then come up with a detailed action plan before executing according to the plan thus created step-by-step cautiously.
 
 ---
-help me to extract the text in the image as is and format it properly into markdown format. take care not to change its content or meaning. use ```markdown ``` tags to enclose your generated text.
+based on your project code and config files validation just completed, please document the findings in a markdown document file, "code_validation_against_specifications_report.md". please be very detailed, clear and present the sections in logical sequence. end the document with a conclusion and recommendations like improvements and next steps.
 
+---
+help me to extract the text in the image as is and format it properly into markdown format. take care not to change its content or meaning. use ```markdown ``` tags to enclose your generated text.
 
