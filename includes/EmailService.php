@@ -6,11 +6,14 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 class EmailService {
     private $mailer;
-    private $logger;
+    private $pdo;
 
     public function __construct() {
         $this->mailer = new PHPMailer(true);
         $this->setupMailer();
+
+        global $pdo;
+        $this->pdo = $pdo;
     }
 
     private function setupMailer() {
@@ -25,14 +28,14 @@ class EmailService {
             $this->mailer->setFrom(SMTP_FROM, SMTP_FROM_NAME);
             $this->mailer->isHTML(true);
         } catch (Exception $e) {
-            error_log("Mailer Setup Error: " . $e->getMessage());
+            error_log("Mailer setup error: " . $e->getMessage());
+            throw new Exception("Failed to configure email service");
         }
     }
 
     private function logEmail($userId, $emailType, $recipientEmail, $subject, $status, $errorMessage = null) {
-        global $pdo;
         try {
-            $stmt = $pdo->prepare("
+            $stmt = $this->pdo->prepare("
                 INSERT INTO email_log 
                 (user_id, email_type, recipient_email, subject, status, error_message)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -46,11 +49,15 @@ class EmailService {
                 $errorMessage
             ]);
         } catch (Exception $e) {
-            error_log("Failed to log email: " . $e->getMessage());
+            error_log("Email logging error: " . $e->getMessage());
         }
     }
 
     public function sendOrderConfirmation($order, $user) {
+        if (!isset($user['email']) || !isset($order['id'])) {
+            throw new InvalidArgumentException("Invalid order or user data for confirmation email");
+        }
+
         try {
             ob_start();
             require __DIR__ . '/../views/emails/order_confirmation.php';
@@ -80,11 +87,16 @@ class EmailService {
                 'failed',
                 $e->getMessage()
             );
-            return false;
+            error_log("Failed to send order confirmation: " . $e->getMessage());
+            throw new Exception("Failed to send order confirmation email");
         }
     }
 
     public function sendPasswordReset($user, $token) {
+        if (!isset($user['email']) || !isset($user['name'])) {
+            throw new InvalidArgumentException("Invalid user data for password reset email");
+        }
+
         try {
             $resetLink = BASE_URL . "index.php?page=reset-password&token=" . urlencode($token);
 
@@ -97,10 +109,11 @@ class EmailService {
             $this->mailer->addAddress($user['email'], $user['name']);
             $this->mailer->Subject = 'Reset Your Password - The Scent';
             $this->mailer->Body = $emailContent;
+            $this->mailer->AltBody = "Reset your password by clicking this link: " . $resetLink;
 
             $success = $this->mailer->send();
             $this->logEmail(
-                $user['id'],
+                $user['id'] ?? null,
                 'password_reset',
                 $user['email'],
                 'Reset Your Password - The Scent',
@@ -110,14 +123,15 @@ class EmailService {
             return $success;
         } catch (Exception $e) {
             $this->logEmail(
-                $user['id'],
+                $user['id'] ?? null,
                 'password_reset',
                 $user['email'],
                 'Reset Your Password - The Scent',
                 'failed',
                 $e->getMessage()
             );
-            return false;
+            error_log("Failed to send password reset email: " . $e->getMessage());
+            throw new Exception("Failed to send password reset email");
         }
     }
 
@@ -175,6 +189,10 @@ class EmailService {
     }
 
     public function sendShippingUpdate($order, $user, $status) {
+        if (!isset($user['email']) || !isset($order['id'])) {
+            throw new InvalidArgumentException("Invalid order or user data for shipping update");
+        }
+
         try {
             ob_start();
             require __DIR__ . '/../views/emails/shipping_update.php';
@@ -204,7 +222,8 @@ class EmailService {
                 'failed',
                 $e->getMessage()
             );
-            return false;
+            error_log("Failed to send shipping update: " . $e->getMessage());
+            throw new Exception("Failed to send shipping update email");
         }
     }
 

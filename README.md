@@ -59,18 +59,69 @@ This project was crafted with modularity, performance, and user experience in mi
 
 ## 🎯 Features
 
+### 🛍️ Core E-commerce
 ✅ **Modern Landing Page**  
 ✅ **Essential Oil & Soap Catalog**  
 ✅ **Personalized Scent Finder Quiz**  
 ✅ **Product Categories & Recommendations**  
 ✅ **Responsive Design (Mobile-Friendly)**  
+
+### 🔐 User Management
 ✅ **User Authentication (Login/Register)**  
-✅ **Shopping Cart & Checkout**  
-✅ **Admin Panel for Product Management**  
-✅ **Newsletter Subscription System**  
-✅ **Animated Particles & Scroll Effects**  
-✅ **Secure DB Access with PDO**  
-✅ **Customizable MVC-like PHP Structure**  
+✅ **Password Reset System**  
+✅ **User Profile Management**  
+✅ **Order History & Tracking**  
+
+### 🛒 Shopping Experience
+✅ **Real-time Shopping Cart**  
+- Ajax-based updates
+- Stock validation
+- Price calculations
+
+✅ **Secure Checkout Process**  
+- Multiple payment methods
+- Address validation
+- Order confirmation
+
+✅ **Payment Integration**  
+- Stripe integration
+- Payment intent handling
+- Secure transaction processing
+- Error handling & recovery
+
+### 💼 Business Features
+✅ **Inventory Management**  
+- Real-time stock tracking
+- Low stock alerts
+- Stock movement history
+- Backorder handling
+
+✅ **Tax System**  
+- Country/state-based tax rates
+- Real-time calculations
+- Tax reporting capabilities
+
+✅ **Coupon System**  
+- Multiple discount types
+- Usage tracking
+- Validity periods
+- Minimum purchase rules
+
+### 📧 Communication
+✅ **Email Notification System**  
+- Order confirmations
+- Shipping updates
+- Password reset
+- Newsletter system
+
+### 👑 Admin Features
+✅ **Admin Dashboard**  
+- Product management
+- Order processing
+- User management
+- Inventory control
+- Tax rate management
+- Coupon administration
 
 ---
 
