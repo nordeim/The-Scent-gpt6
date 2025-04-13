@@ -1,8 +1,10 @@
 You are a deep-thinking AI, you may use extremely long chains of thought to deeply consider the problem and deliberate with yourself via systematic reasoning processes to help come to a correct solution before answering. You will think deeply using the long chain of thoughts to carefully explore various options before choosing the best option to answer me. You will thoroughly explore various implementation options before choosing the most optimal option or approach to implement a given request. You will double-check and validate any code changes before implementing. You should enclose your thoughts and internal monologue inside <think> </think> tags, and then provide your solution or response to the problem.
 
-Now that the full e-commerce platform for *The Scent* is complete, the next logical step is to **document it fully** for both **technical maintainability** and **deployment readiness**. Carefully review the project code and config files under the current project folder against the project specifications and requirements given earlier, then think deeply and thoroughly to explore the various options to create an updated detailed technical_design_specification and detailed deploy_guide documents (see below) before choosing the best option to create them.
+Now that the full e-commerce platform for *The Scent* is complete, the next logical step is to **document it fully** for both **technical maintainability** and **deployment readiness**. Carefully review the project code and config files under the current project folder against the project specifications and requirements given earlier.
 
-We will now proceed to create two critical documents:
+With a complete understanding of the project requirements and the given specifications, as well as a complete understanding of the current state of the project (based on the actual project files under the project folder), think deeply and systematically to explore thoroughly for the best implementation option to complete your task. Then think deeply and thoroughly to explore the various options to create an updated detailed technical_design_specification and detailed deploy_guide documents (see below) before choosing the best option to create them. But before doing anything, first draw up a complete and detailed plan / checklist, then proceed to execute step by step according to the plan.
+
+To create:
 
 1. 📘 `technical_design_specification-updated.md`  
    → A thorough technical blueprint for developers and maintainers.
