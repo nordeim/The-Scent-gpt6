@@ -90,6 +90,21 @@ try {
             }
             break;
             
+        case 'register':
+            if (isLoggedIn()) {
+                header('Location: index.php?page=account');
+                exit;
+            }
+            require_once ROOT_PATH . '/controllers/AccountController.php';
+            $controller = new AccountController($pdo);
+            
+            if ($action === 'submit') {
+                $controller->register();
+            } else {
+                require_once ROOT_PATH . '/views/register.php';
+            }
+            break;
+            
         case 'quiz':
             require_once ROOT_PATH . '/controllers/QuizController.php';
             $controller = new QuizController($pdo);
