@@ -38,32 +38,24 @@
     </div>
 </section>
 
-<!-- Featured Products -->
-<section class="featured-products py-20 bg-gray-50">
-    <div class="container">
-        <h2 class="text-3xl font-bold text-center mb-12" data-aos="fade-up">Featured Collection</h2>
+<!-- Featured Products Section -->
+<section class="py-16 bg-gray-50" id="featured-products">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl md:text-4xl font-bold text-center mb-12" data-aos="fade-up">Featured Collections</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <?php foreach ($featuredProducts as $product): ?>
-                <div class="product-card bg-white rounded-lg shadow-lg" data-aos="fade-up">
-                    <div class="product-image relative overflow-hidden">
-                        <img src="<?= htmlspecialchars($product['image']) ?>" 
-                             alt="<?= htmlspecialchars($product['name']) ?>"
-                             class="w-full h-64 object-cover">
-                        <?php if ($product['highlight_text']): ?>
-                            <span class="product-badge absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full">
-                                <?= htmlspecialchars($product['highlight_text']) ?>
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="product-info p-6">
+            <?php foreach ($products as $product): ?>
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden" data-aos="fade-up">
+                    <img src="<?= htmlspecialchars($product['image']) ?>" 
+                         alt="<?= htmlspecialchars($product['name']) ?>"
+                         class="w-full h-48 object-cover"
+                         loading="lazy">
+                    <div class="p-4">
                         <h3 class="text-xl font-semibold mb-2"><?= htmlspecialchars($product['name']) ?></h3>
-                        <p class="text-gray-600 mb-4">$<?= number_format($product['price'], 2) ?></p>
-                        <div class="flex gap-2">
-                            <a href="index.php?page=products&id=<?= $product['id'] ?>" 
-                               class="btn-secondary flex-1">View Details</a>
-                            <button class="btn-primary flex-1 add-to-cart" 
-                                    data-product-id="<?= $product['id'] ?>">Add to Cart</button>
-                        </div>
+                        <p class="text-gray-600 mb-4">$<?= htmlspecialchars(number_format($product['price'], 2)) ?></p>
+                        <a href="index.php?page=product&id=<?= $product['id'] ?>" 
+                           class="inline-block bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition">
+                            View Details
+                        </a>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -71,13 +63,13 @@
     </div>
 </section>
 
-<!-- Quiz Promo Section -->
-<section class="quiz-promo py-20 bg-gradient-to-r from-primary to-primary-dark text-white">
-    <div class="container">
-        <div class="text-center max-w-3xl mx-auto" data-aos="fade-up">
-            <h2 class="text-4xl font-bold mb-6">Discover Your Perfect Scent</h2>
-            <p class="text-xl mb-8">Take our interactive quiz to find your ideal aromatherapy match based on your preferences and lifestyle.</p>
-            <a href="index.php?page=quiz" class="btn-white">Start Quiz Now</a>
+<!-- Scent Quiz Teaser -->
+<section class="py-16 bg-white" id="quiz-teaser">
+    <div class="container mx-auto px-4 text-center">
+        <div class="max-w-3xl mx-auto" data-aos="fade-up">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">Not Sure Where to Start?</h2>
+            <p class="text-xl text-gray-600 mb-8">Let us guide you to your perfect scent. Take our quiz and discover products tailored to your needs.</p>
+            <a href="index.php?page=quiz" class="btn-primary inline-block">Find Your Perfect Scent</a>
         </div>
     </div>
 </section>
