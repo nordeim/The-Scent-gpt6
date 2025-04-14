@@ -37,7 +37,7 @@ $delay = 0; // Initialize delay counter for animations
                                 <?= htmlspecialchars($product['display_badge']) ?>
                             </span>
                         <?php endif; ?>
-                        <img src="<?= htmlspecialchars($product['image']) ?>" 
+                        <img src="<?= htmlspecialchars($product['image_url']) ?>" 
                              alt="<?= htmlspecialchars($product['name']) ?>"
                              class="w-full h-64 object-cover"
                              loading="lazy">

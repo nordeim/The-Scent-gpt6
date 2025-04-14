@@ -14,6 +14,7 @@ try {
     // Load core dependencies
     require_once ROOT_PATH . '/includes/db.php';
     require_once ROOT_PATH . '/includes/auth.php';
+    require_once ROOT_PATH . '/controllers/ProductController.php';
     
     // Handle routing
     $page = SecurityMiddleware::validateInput($_GET['page'] ?? 'home', 'string');
@@ -25,31 +26,16 @@ try {
     }
     
     // Route to appropriate controller/action
+    $productController = new ProductController($pdo);
     switch ($page) {
         case 'home':
-        default:
-            require_once ROOT_PATH . '/controllers/ProductController.php';
-            $controller = new ProductController($pdo);
-            $controller->showHomePage();
+            $productController->showHomePage();
             break;
-            
+        case 'product':
+            $productController->showProduct($_GET['id'] ?? null);
+            break;
         case 'products':
-            require_once ROOT_PATH . '/controllers/ProductController.php';
-            $controller = new ProductController($pdo);
-            $id = SecurityMiddleware::validateInput($_GET['id'] ?? null, 'int');
-            
-            if ($id) {
-                $product = $controller->getProduct($id);
-                if (!$product) {
-                    http_response_code(404);
-                    require_once ROOT_PATH . '/views/404.php';
-                    break;
-                }
-                require_once ROOT_PATH . '/views/product_detail.php';
-            } else {
-                $products = $controller->getAllProducts();
-                require_once ROOT_PATH . '/views/products.php';
-            }
+            $productController->showProductList();
             break;
             
         case 'cart':

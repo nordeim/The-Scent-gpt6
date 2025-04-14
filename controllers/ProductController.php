@@ -4,7 +4,6 @@ require_once __DIR__ . '/../models/Product.php';
 
 class ProductController extends BaseController {
     private $productModel;
-    private $cache = [];
     private $itemsPerPage = 12;
     
     public function __construct($pdo) {
@@ -14,17 +13,16 @@ class ProductController extends BaseController {
     
     public function showHomePage() {
         try {
-            // Check cache for featured products
-            if (!isset($this->cache['featured'])) {
-                $this->cache['featured'] = $this->productModel->getFeatured();
+            $featuredProducts = $this->productModel->getFeatured();
+            
+            if (empty($featuredProducts)) {
+                error_log("No featured products found");
             }
             
-            $featuredProducts = $this->cache['featured'];
-            require_once __DIR__ . '/../views/home.php';
-            
+            require_once ROOT_PATH . '/views/home.php';
         } catch (Exception $e) {
-            error_log("Error loading home page: " . $e->getMessage());
-            $this->setFlashMessage('Error loading featured products', 'error');
+            error_log("Error in showHomePage: " . $e->getMessage());
+            $this->setFlashMessage('An error occurred while loading the page', 'error');
             $this->redirect('error');
         }
     }
@@ -287,6 +285,24 @@ class ProductController extends BaseController {
                 'success' => false,
                 'message' => 'Error performing search'
             ], 500);
+        }
+    }
+    
+    public function getProduct($id) {
+        try {
+            return $this->productModel->getById($id);
+        } catch (Exception $e) {
+            error_log("Error getting product: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    public function getAllProducts() {
+        try {
+            return $this->productModel->getAll();
+        } catch (Exception $e) {
+            error_log("Error getting all products: " . $e->getMessage());
+            throw $e;
         }
     }
 }
