@@ -1,262 +1,98 @@
-<?php require_once 'layout/header.php'; ?>
+<?php require_once __DIR__ . '/layout/header.php'; ?>
 
-<section class="quiz-section">
-    <div class="container">
-        <div class="quiz-container" data-aos="fade-up">
-            <h1>Find Your Perfect Scent</h1>
-            <p class="quiz-intro">Answer a few questions to discover your ideal aromatherapy products.</p>
-            
-            <form id="scentQuiz" action="index.php?page=quiz" method="POST" class="quiz-form">
-                <?php if (isset($_GET['error']) && $_GET['error'] === 'missing_answers'): ?>
-                    <div class="error-message">Please answer all questions to get your personalized recommendations.</div>
-                <?php endif; ?>
-                
-                <div class="question-container">
-                    <div class="question active" data-question="1">
-                        <h3>What type of scents do you typically prefer?</h3>
-                        <div class="options">
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="100">
-                                <input type="radio" name="q_preferred_scents" value="floral">
-                                <span class="option-content">
-                                    <i class="fas fa-flower"></i>
-                                    <span>Floral</span>
-                                    <small>Rose, Jasmine, Lavender</small>
-                                </span>
-                            </label>
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="200">
-                                <input type="radio" name="q_preferred_scents" value="woody">
-                                <span class="option-content">
-                                    <i class="fas fa-tree"></i>
-                                    <span>Woody</span>
-                                    <small>Sandalwood, Cedar, Pine</small>
-                                </span>
-                            </label>
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="300">
-                                <input type="radio" name="q_preferred_scents" value="citrus">
-                                <span class="option-content">
-                                    <i class="fas fa-lemon"></i>
-                                    <span>Citrus</span>
-                                    <small>Orange, Lemon, Bergamot</small>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
+<div class="quiz-container min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 py-20">
+    <!-- Particles Background -->
+    <div id="particles-js" class="absolute inset-0 z-0"></div>
+
+    <div class="container mx-auto px-4 relative z-10">
+        <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8" data-aos="fade-up">
+            <h1 class="text-4xl font-heading font-semibold text-center mb-8">Find Your Perfect Scent</h1>
+            <p class="text-center text-gray-600 mb-12">Let us guide you to the perfect aromatherapy products for your needs.</p>
+
+            <form id="scent-quiz" method="POST" action="quiz" class="space-y-8">
+                <div class="quiz-step" data-step="1">
+                    <h3 class="text-2xl font-heading mb-6">What are you looking for today?</h3>
                     
-                    <div class="question" data-question="2">
-                        <h3>What's your primary goal with aromatherapy?</h3>
-                        <div class="options">
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="100">
-                                <input type="radio" name="q_mood_goal" value="calming">
-                                <span class="option-content">
-                                    <i class="fas fa-cloud"></i>
-                                    <span>Relaxation</span>
-                                    <small>Reduce stress and anxiety</small>
-                                </span>
-                            </label>
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="200">
-                                <input type="radio" name="q_mood_goal" value="energizing">
-                                <span class="option-content">
-                                    <i class="fas fa-bolt"></i>
-                                    <span>Energy</span>
-                                    <small>Boost mood and vitality</small>
-                                </span>
-                            </label>
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="300">
-                                <input type="radio" name="q_mood_goal" value="focusing">
-                                <span class="option-content">
-                                    <i class="fas fa-brain"></i>
-                                    <span>Focus</span>
-                                    <small>Improve concentration</small>
-                                </span>
-                            </label>
-                        </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label class="quiz-option group">
+                            <input type="radio" name="mood" value="relaxation" class="hidden" required>
+                            <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all duration-300 group-hover:border-primary group-hover:bg-primary/5">
+                                <i class="fas fa-spa text-3xl mb-4 text-primary"></i>
+                                <h4 class="font-heading text-xl mb-2">Relaxation</h4>
+                                <p class="text-sm text-gray-600">Find calm and peace in your daily routine</p>
+                            </div>
+                        </label>
+
+                        <label class="quiz-option group">
+                            <input type="radio" name="mood" value="energy" class="hidden">
+                            <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all duration-300 group-hover:border-primary group-hover:bg-primary/5">
+                                <i class="fas fa-bolt text-3xl mb-4 text-primary"></i>
+                                <h4 class="font-heading text-xl mb-2">Energy</h4>
+                                <p class="text-sm text-gray-600">Boost your vitality and motivation</p>
+                            </div>
+                        </label>
+
+                        <label class="quiz-option group">
+                            <input type="radio" name="mood" value="focus" class="hidden">
+                            <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all duration-300 group-hover:border-primary group-hover:bg-primary/5">
+                                <i class="fas fa-brain text-3xl mb-4 text-primary"></i>
+                                <h4 class="font-heading text-xl mb-2">Focus</h4>
+                                <p class="text-sm text-gray-600">Enhance concentration and clarity</p>
+                            </div>
+                        </label>
+
+                        <label class="quiz-option group">
+                            <input type="radio" name="mood" value="balance" class="hidden">
+                            <div class="p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all duration-300 group-hover:border-primary group-hover:bg-primary/5">
+                                <i class="fas fa-yin-yang text-3xl mb-4 text-primary"></i>
+                                <h4 class="font-heading text-xl mb-2">Balance</h4>
+                                <p class="text-sm text-gray-600">Find harmony in body and mind</p>
+                            </div>
+                        </label>
                     </div>
-                    
-                    <div class="question" data-question="3">
-                        <h3>When do you typically use aromatherapy products?</h3>
-                        <div class="options">
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="100">
-                                <input type="radio" name="q_daily_routine" value="morning">
-                                <span class="option-content">
-                                    <i class="fas fa-sun"></i>
-                                    <span>Morning</span>
-                                    <small>Start the day fresh</small>
-                                </span>
-                            </label>
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="200">
-                                <input type="radio" name="q_daily_routine" value="evening">
-                                <span class="option-content">
-                                    <i class="fas fa-moon"></i>
-                                    <span>Evening</span>
-                                    <small>Wind down and relax</small>
-                                </span>
-                            </label>
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="300">
-                                <input type="radio" name="q_daily_routine" value="throughout">
-                                <span class="option-content">
-                                    <i class="fas fa-clock"></i>
-                                    <span>Throughout the day</span>
-                                    <small>Regular aromatherapy</small>
-                                </span>
-                            </label>
-                        </div>
+
+                    <div class="mt-8 text-center">
+                        <button type="submit" class="btn-primary inline-flex items-center space-x-2">
+                            <span>Find My Perfect Scent</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
                     </div>
-                    
-                    <div class="question" data-question="4">
-                        <h3>Where do you spend most of your time?</h3>
-                        <div class="options">
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="100">
-                                <input type="radio" name="q_environment" value="indoors">
-                                <span class="option-content">
-                                    <i class="fas fa-home"></i>
-                                    <span>Indoors</span>
-                                    <small>Home or office</small>
-                                </span>
-                            </label>
-                            <label class="option-card" data-aos="fade-up" data-aos-delay="200">
-                                <input type="radio" name="q_environment" value="outdoors">
-                                <span class="option-content">
-                                    <i class="fas fa-tree"></i>
-                                    <span>Outdoors</span>
-                                    <small>Nature and fresh air</small>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="quiz-navigation">
-                    <button type="button" class="btn-secondary prev-question" style="display: none;">Previous</button>
-                    <button type="button" class="btn-primary next-question">Next</button>
-                    <button type="submit" class="btn-primary submit-quiz" style="display: none;">Get My Recommendations</button>
                 </div>
             </form>
         </div>
     </div>
-</section>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('scentQuiz');
-    const questions = document.querySelectorAll('.question');
-    const nextBtn = document.querySelector('.next-question');
-    const prevBtn = document.querySelector('.prev-question');
-    const submitBtn = document.querySelector('.submit-quiz');
-    let currentQuestion = 0;
-    
-    // Show first question
-    questions[currentQuestion].classList.add('active');
-    
-    // Handle next button
-    nextBtn.addEventListener('click', () => {
-        // Validate current question
-        const currentInputs = questions[currentQuestion].querySelectorAll('input[type="radio"]');
-        let answered = false;
-        currentInputs.forEach(input => {
-            if (input.checked) answered = true;
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize particles
+    particlesJS.load('particles-js', '/particles.json');
+
+    // Handle option selection
+    const options = document.querySelectorAll('.quiz-option');
+    options.forEach(option => {
+        option.addEventListener('click', () => {
+            // Remove selected state from all options
+            options.forEach(opt => opt.querySelector('div').classList.remove('border-primary', 'bg-primary/5'));
+            
+            // Add selected state to clicked option
+            option.querySelector('div').classList.add('border-primary', 'bg-primary/5');
         });
-        
-        if (!answered) {
-            alert('Please select an answer before continuing.');
-            return;
-        }
-        
-        // Move to next question
-        questions[currentQuestion].classList.remove('active');
-        currentQuestion++;
-        questions[currentQuestion].classList.add('active');
-        
-        // Update navigation buttons
-        prevBtn.style.display = 'block';
-        if (currentQuestion === questions.length - 1) {
-            nextBtn.style.display = 'none';
-            submitBtn.style.display = 'block';
-        }
-
-        // Update progress
-        updateProgress();
-    });
-    
-    // Handle previous button
-    prevBtn.addEventListener('click', () => {
-        questions[currentQuestion].classList.remove('active');
-        currentQuestion--;
-        questions[currentQuestion].classList.add('active');
-        
-        // Update navigation buttons
-        if (currentQuestion === 0) {
-            prevBtn.style.display = 'none';
-        }
-        nextBtn.style.display = 'block';
-        submitBtn.style.display = 'none';
-
-        // Update progress
-        updateProgress();
     });
 
-    // Track and display progress
-    const progressBar = document.createElement('div');
-    progressBar.className = 'quiz-progress';
-    form.insertBefore(progressBar, form.firstChild);
-
-    function updateProgress() {
-        const progress = ((currentQuestion + 1) / questions.length) * 100;
-        progressBar.style.width = `${progress}%`;
-        progressBar.setAttribute('aria-valuenow', progress);
-    }
-
-    // Initialize progress
-    updateProgress();
-
-    // Enhance form submission handling
-    form.addEventListener('submit', async (e) => {
+    // Optional: Smooth scroll to results
+    document.getElementById('scent-quiz').addEventListener('submit', (e) => {
         e.preventDefault();
+        const form = e.target;
         
-        // Validate all questions are answered
-        let allAnswered = true;
-        questions.forEach((question, index) => {
-            const inputs = question.querySelectorAll('input[type="radio"]');
-            let questionAnswered = false;
-            inputs.forEach(input => {
-                if (input.checked) questionAnswered = true;
-            });
-            if (!questionAnswered) {
-                allAnswered = false;
-                question.classList.add('unanswered');
-            } else {
-                question.classList.remove('unanswered');
-            }
-        });
-
-        if (!allAnswered) {
-            alert('Please answer all questions to get your personalized recommendations.');
+        if (!form.mood.value) {
+            alert('Please select an option to continue.');
             return;
         }
 
-        // Show loading state
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finding your perfect scent...';
-        
-        try {
-            const formData = new FormData(form);
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (!response.ok) throw new Error('Network response was not ok');
-            
-            const result = await response.text();
-            document.querySelector('.quiz-section').innerHTML = result;
-            
-        } catch (error) {
-            console.error('Error:', error);
-            alert('There was a problem submitting your quiz. Please try again.');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Get My Recommendations';
-        }
+        form.submit();
     });
 });
 </script>
 
-<?php require_once 'layout/footer.php'; ?>
+<?php require_once __DIR__ . '/layout/footer.php'; ?>

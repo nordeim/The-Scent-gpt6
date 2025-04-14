@@ -5,10 +5,12 @@ require_once __DIR__ . '/../models/Product.php';
 
 class QuizController extends BaseController {
     private $quizModel;
+    private $pdo;
     
     public function __construct($pdo) {
         parent::__construct($pdo);
         $this->quizModel = new Quiz($pdo);
+        $this->pdo = $pdo;
     }
     
     public function showQuiz() {
@@ -259,6 +261,57 @@ class QuizController extends BaseController {
             } else {
                 throw $e;
             }
+        }
+    }
+
+    public function handleQuiz() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $mood = $_POST['mood'] ?? null;
+            if (!$mood) {
+                die("Please select a mood.");
+            }
+
+            // Map mood to product attribute criteria
+            $moodEffectMap = [
+                'relaxation' => 'calming',
+                'energy' => 'energizing',
+                'focus' => 'focusing',
+                'balance' => 'balancing'
+            ];
+
+            $moodEffect = $moodEffectMap[$mood] ?? 'calming';
+            
+            // Get matching products based on attributes
+            $stmt = $this->pdo->prepare("
+                SELECT p.* 
+                FROM products p
+                JOIN product_attributes pa ON p.id = pa.product_id
+                WHERE pa.mood_effect = ?
+                ORDER BY RAND()
+                LIMIT 3
+            ");
+            $stmt->execute([$moodEffect]);
+            $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Store quiz result
+            session_start();
+            $userId = $_SESSION['user']['id'] ?? null;
+            $email = $_SESSION['user']['email'] ?? null;
+            
+            $answers = json_encode(['mood' => $mood]);
+            $recommendations = json_encode(array_column($products, 'id'));
+            
+            $stmt = $this->pdo->prepare("
+                INSERT INTO quiz_results 
+                (user_id, email, answers, recommendations) 
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->execute([$userId, $email, $answers, $recommendations]);
+
+            // Show results page
+            include __DIR__ . '/../views/quiz_results.php';
+        } else {
+            include __DIR__ . '/../views/quiz.php';
         }
     }
 }

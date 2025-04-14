@@ -7,395 +7,253 @@ class Quiz {
     }
     
     public function getQuestions() {
-        $stmt = $this->pdo->query("SELECT * FROM quiz_questions ORDER BY order_num ASC");
-        return $stmt->fetchAll();
+        return [
+            [
+                'id' => 'mood',
+                'question' => 'What are you looking for today?',
+                'options' => [
+                    'relaxation' => [
+                        'label' => 'Relaxation',
+                        'icon' => 'fa-spa',
+                        'description' => 'Find calm and peace in your daily routine'
+                    ],
+                    'energy' => [
+                        'label' => 'Energy',
+                        'icon' => 'fa-bolt',
+                        'description' => 'Boost your vitality and motivation'
+                    ],
+                    'focus' => [
+                        'label' => 'Focus',
+                        'icon' => 'fa-brain',
+                        'description' => 'Enhance concentration and clarity'
+                    ],
+                    'balance' => [
+                        'label' => 'Balance',
+                        'icon' => 'fa-yin-yang',
+                        'description' => 'Find harmony in body and mind'
+                    ]
+                ]
+            ]
+        ];
     }
     
     public function getRecommendations($answers) {
-        // Calculate user preferences based on answers
-        $preferences = $this->calculatePreferences($answers);
-        
-        // Get matching products
-        $stmt = $this->pdo->prepare("
-            SELECT p.* 
-            FROM products p
-            JOIN product_attributes pa ON p.id = pa.product_id
-            WHERE 
-                (pa.scent_type = ? OR pa.scent_type = ?) AND
-                (pa.mood_effect = ? OR pa.mood_effect = ?)
-            GROUP BY p.id
-            ORDER BY 
-                CASE 
-                    WHEN pa.scent_type = ? THEN 2
-                    WHEN pa.scent_type = ? THEN 1
-                END DESC,
-                CASE 
-                    WHEN pa.mood_effect = ? THEN 2
-                    WHEN pa.mood_effect = ? THEN 1
-                END DESC
-            LIMIT 3
-        ");
-        
-        $stmt->execute([
-            $preferences['primary_scent'],
-            $preferences['secondary_scent'],
-            $preferences['primary_mood'],
-            $preferences['secondary_mood'],
-            $preferences['primary_scent'],
-            $preferences['secondary_scent'],
-            $preferences['primary_mood'],
-            $preferences['secondary_mood']
-        ]);
-        
-        return $stmt->fetchAll();
-    }
-    
-    public function saveQuizResult($userId, $answers, $recommendations) {
         try {
-            $this->pdo->beginTransaction();
+            $moodEffectMap = [
+                'relaxation' => 'calming',
+                'energy' => 'energizing',
+                'focus' => 'focusing',
+                'balance' => 'balancing'
+            ];
+
+            $mood = $answers['mood'] ?? 'relaxation';
+            $moodEffect = $moodEffectMap[$mood] ?? 'calming';
             
-            // Save quiz answers
+            // Get matching products based on mood and attributes
             $stmt = $this->pdo->prepare("
-                INSERT INTO quiz_results 
-                (user_id, answers, recommendations, created_at)
-                VALUES (?, ?, ?, NOW())
+                SELECT DISTINCT p.*, pa.mood_effect, pa.scent_type, pa.intensity_level
+                FROM products p
+                JOIN product_attributes pa ON p.id = pa.product_id
+                WHERE pa.mood_effect = ?
+                ORDER BY RAND()
+                LIMIT 3
             ");
             
-            $stmt->execute([
+            $stmt->execute([$moodEffect]);
+            $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // If no exact matches, get featured products as fallback
+            if (empty($products)) {
+                $stmt = $this->pdo->prepare("
+                    SELECT DISTINCT p.*, pa.mood_effect, pa.scent_type, pa.intensity_level
+                    FROM products p
+                    JOIN product_attributes pa ON p.id = pa.product_id
+                    WHERE p.is_featured = 1
+                    ORDER BY RAND()
+                    LIMIT 3
+                ");
+                $stmt->execute();
+                $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            // Add scent descriptions
+            foreach ($products as &$product) {
+                $product['scent_description'] = $this->getScentDescription($product['scent_type']);
+                $product['mood_description'] = $this->getMoodDescription($product['mood_effect']);
+            }
+            
+            return $products;
+        } catch (PDOException $e) {
+            error_log("Error getting recommendations: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    public function saveQuizResult($userId, $email, $answers, $recommendations) {
+        try {
+            $stmt = $this->pdo->prepare("
+                INSERT INTO quiz_results 
+                (user_id, email, answers, recommendations, created_at)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ");
+            
+            return $stmt->execute([
                 $userId,
+                $email,
                 json_encode($answers),
                 json_encode($recommendations)
             ]);
-            
-            // Update user preferences table for faster lookups
-            $this->updateUserPreferences($userId, $answers);
-            
-            $this->pdo->commit();
-            return true;
-            
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
+        } catch (PDOException $e) {
             error_log("Error saving quiz result: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
-    private function calculatePreferences($answers) {
-        // Initialize preference arrays
-        $scentScores = [
-            'floral' => 0,
-            'woody' => 0,
-            'citrus' => 0,
-            'oriental' => 0,
-            'fresh' => 0
+    private function getScentDescription($scentType) {
+        $descriptions = [
+            'floral' => 'Delicate and romantic floral notes that bring peace and harmony',
+            'woody' => 'Rich, grounding woody scents that promote stability and strength',
+            'citrus' => 'Bright, uplifting citrus notes that energize and refresh',
+            'oriental' => 'Warm, exotic notes that create a sense of luxury and comfort',
+            'fresh' => 'Clean, crisp scents that invigorate and purify'
         ];
         
-        $moodScores = [
-            'calming' => 0,
-            'energizing' => 0,
-            'focusing' => 0,
-            'balancing' => 0
+        return $descriptions[$scentType] ?? '';
+    }
+    
+    private function getMoodDescription($moodEffect) {
+        $descriptions = [
+            'calming' => 'Perfect for relaxation and stress relief',
+            'energizing' => 'Ideal for boosting energy and motivation',
+            'focusing' => 'Helps improve concentration and mental clarity',
+            'balancing' => 'Promotes overall harmony and well-being'
         ];
         
-        // Map answers to preferences
-        foreach ($answers as $question => $answer) {
-            switch ($question) {
-                case 'preferred_scents':
-                    $scentScores[$answer] += 2;
-                    break;
-                    
-                case 'environment':
-                    if ($answer == 'outdoors') {
-                        $scentScores['fresh'] += 1;
-                        $scentScores['citrus'] += 1;
-                    } else {
-                        $scentScores['woody'] += 1;
-                        $scentScores['oriental'] += 1;
-                    }
-                    break;
-                    
-                case 'mood_goal':
-                    $moodScores[$answer] += 2;
-                    break;
-                    
-                case 'daily_routine':
-                    if ($answer == 'morning') {
-                        $moodScores['energizing'] += 1;
-                    } else {
-                        $moodScores['calming'] += 1;
-                    }
-                    break;
+        return $descriptions[$moodEffect] ?? '';
+    }
+    
+    public function getAnalytics($timeRange = 30) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT 
+                    DATE(created_at) as date,
+                    COUNT(*) as total_quizzes,
+                    COUNT(DISTINCT user_id) as unique_users,
+                    COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN user_id END) as registered_users,
+                    COUNT(DISTINCT CASE WHEN user_id IS NULL THEN email END) as guest_users
+                FROM quiz_results
+                WHERE created_at >= DATE_SUB(CURRENT_DATE, INTERVAL ? DAY)
+                GROUP BY DATE(created_at)
+                ORDER BY date DESC
+            ");
+            
+            $stmt->execute([$timeRange]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting quiz analytics: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    public function getPopularMoods($timeRange = 30) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT 
+                    JSON_UNQUOTE(JSON_EXTRACT(answers, '$.mood')) as mood,
+                    COUNT(*) as count
+                FROM quiz_results
+                WHERE created_at >= DATE_SUB(CURRENT_DATE, INTERVAL ? DAY)
+                GROUP BY mood
+                ORDER BY count DESC
+            ");
+            
+            $stmt->execute([$timeRange]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting popular moods: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    public function getPersonalizedRecommendations($userId, $limit = 3) {
+        try {
+            // Get user's previous quiz results
+            $stmt = $this->pdo->prepare("
+                SELECT answers, recommendations
+                FROM quiz_results
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+                LIMIT 5
+            ");
+            
+            $stmt->execute([$userId]);
+            $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($history)) {
+                // If no history, return featured products
+                $stmt = $this->pdo->prepare("
+                    SELECT p.*, pa.mood_effect, pa.scent_type
+                    FROM products p
+                    JOIN product_attributes pa ON p.id = pa.product_id
+                    WHERE p.is_featured = 1
+                    LIMIT ?
+                ");
+                $stmt->execute([$limit]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
-        }
-        
-        // Get top preferences
-        arsort($scentScores);
-        arsort($moodScores);
-        
-        $scentTypes = array_keys($scentScores);
-        $moodEffects = array_keys($moodScores);
-        
-        return [
-            'primary_scent' => $scentTypes[0],
-            'secondary_scent' => $scentTypes[1],
-            'primary_mood' => $moodEffects[0],
-            'secondary_mood' => $moodEffects[1]
-        ];
-    }
-
-    private function updateUserPreferences($userId, $answers) {
-        $preferences = $this->calculatePreferences($answers);
-        
-        $stmt = $this->pdo->prepare("
-            INSERT INTO user_preferences 
-            (user_id, scent_type, mood_effect, preference_score, last_updated)
-            VALUES (?, ?, ?, 1, NOW())
-            ON DUPLICATE KEY UPDATE
-            preference_score = preference_score + 1,
-            last_updated = NOW()
-        ");
-        
-        foreach ($preferences as $pref) {
-            $stmt->execute([
-                $userId,
-                $pref['scent_type'],
-                $pref['mood_effect']
-            ]);
-        }
-    }
-
-    public function getUserPreferenceHistory($userId) {
-        $stmt = $this->pdo->prepare("
-            SELECT 
-                scent_type,
-                mood_effect,
-                COUNT(*) as frequency,
-                MAX(qr.created_at) as last_selected
-            FROM quiz_results qr
-            JOIN product_attributes pa ON FIND_IN_SET(pa.product_id, qr.recommended_product_ids)
-            WHERE qr.user_id = ?
-            GROUP BY scent_type, mood_effect
-            ORDER BY frequency DESC, last_selected DESC
-        ");
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll();
-    }
-    
-    public function getPersonalizedRecommendations($userId, $limit = 5) {
-        // Get user's top preferences
-        $stmt = $this->pdo->prepare("
-            WITH user_preferences AS (
-                SELECT 
-                    pa.scent_type,
-                    pa.mood_effect,
-                    COUNT(*) as preference_score
-                FROM quiz_results qr
-                JOIN product_attributes pa ON FIND_IN_SET(pa.product_id, qr.recommended_product_ids)
-                WHERE qr.user_id = ?
-                GROUP BY pa.scent_type, pa.mood_effect
-            )
-            SELECT DISTINCT p.*
-            FROM products p
-            JOIN product_attributes pa ON p.id = pa.product_id
-            LEFT JOIN user_preferences up 
-                ON pa.scent_type = up.scent_type 
-                AND pa.mood_effect = up.mood_effect
-            WHERE p.stock_quantity > 0
-            ORDER BY 
-                CASE WHEN up.preference_score IS NOT NULL 
-                    THEN up.preference_score 
-                    ELSE 0 
-                END DESC,
-                p.is_featured DESC,
-                p.created_at DESC
-            LIMIT ?
-        ");
-        
-        $stmt->execute([$userId, $limit]);
-        return $stmt->fetchAll();
-    }
-
-    public function getQuizStatistics() {
-        $stmt = $this->pdo->query("
-            SELECT 
-                COUNT(*) as total_quizzes,
-                COUNT(DISTINCT user_id) as unique_users,
-                DATE(created_at) as quiz_date
-            FROM quiz_results 
-            GROUP BY DATE(created_at)
-            ORDER BY quiz_date DESC
-        ");
-        return $stmt->fetchAll();
-    }
-
-    public function getPopularPreferences() {
-        $stmt = $this->pdo->query("
-            SELECT 
-                JSON_EXTRACT(answers, '$.preferred_scents') as scent_preference,
-                JSON_EXTRACT(answers, '$.mood_goal') as mood_preference,
-                COUNT(*) as preference_count
-            FROM quiz_results
-            GROUP BY scent_preference, mood_preference
-            ORDER BY preference_count DESC
-        ");
-        return $stmt->fetchAll();
-    }
-
-    public function getDetailedAnalytics($timeRange = 'all') {
-        $whereClause = '';
-        if ($timeRange !== 'all') {
-            $whereClause = "WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-        }
-        
-        // Get basic statistics
-        $stats = $this->getBasicStatistics($whereClause, $timeRange);
-        
-        // Get scent type preferences
-        $scentTypes = $this->getScentTypeDistribution($whereClause, $timeRange);
-        
-        // Get mood effect preferences
-        $moodEffects = $this->getMoodEffectDistribution($whereClause, $timeRange);
-        
-        // Get daily completions
-        $dailyCompletions = $this->getDailyCompletions($whereClause, $timeRange);
-        
-        // Get top recommended products
-        $recommendations = $this->getTopRecommendedProducts($whereClause, $timeRange);
-        
-        return [
-            'statistics' => $stats,
-            'preferences' => [
-                'scent_types' => $scentTypes,
-                'mood_effects' => $moodEffects,
-                'daily_completions' => $dailyCompletions
-            ],
-            'recommendations' => $recommendations
-        ];
-    }
-    
-    private function getBasicStatistics($whereClause, $timeRange) {
-        $sql = "
-            SELECT 
-                COUNT(*) as total_quizzes,
-                COUNT(DISTINCT user_id) as unique_users,
-                AVG(completion_time) as avg_completion_time,
-                COUNT(CASE WHEN led_to_purchase = 1 THEN 1 END) * 100.0 / COUNT(*) as conversion_rate
-            FROM quiz_results
-            $whereClause
-        ";
-        
-        $stmt = $timeRange === 'all' 
-            ? $this->pdo->query($sql)
-            : $this->pdo->prepare($sql);
             
-        if ($timeRange !== 'all') {
-            $stmt->execute([$timeRange]);
-        }
-        
-        return $stmt->fetch();
-    }
-    
-    private function getScentTypeDistribution($whereClause, $timeRange) {
-        $sql = "
-            SELECT 
-                pa.scent_type as type,
-                COUNT(*) as count
-            FROM quiz_results qr
-            JOIN product_attributes pa ON FIND_IN_SET(pa.product_id, qr.recommended_product_ids)
-            $whereClause
-            GROUP BY pa.scent_type
-            ORDER BY count DESC
-        ";
-        
-        $stmt = $timeRange === 'all'
-            ? $this->pdo->query($sql)
-            : $this->pdo->prepare($sql);
+            // Analyze preferences
+            $moodCounts = [];
+            $scentCounts = [];
+            foreach ($history as $result) {
+                $answers = json_decode($result['answers'], true);
+                $recommendations = json_decode($result['recommendations'], true);
+                
+                if (isset($answers['mood'])) {
+                    $moodCounts[$answers['mood']] = ($moodCounts[$answers['mood']] ?? 0) + 1;
+                }
+                
+                // Get scent types from recommended products
+                $stmt = $this->pdo->prepare("
+                    SELECT scent_type
+                    FROM product_attributes
+                    WHERE product_id IN (" . implode(',', $recommendations) . ")
+                ");
+                $stmt->execute();
+                $scents = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                
+                foreach ($scents as $scent) {
+                    $scentCounts[$scent] = ($scentCounts[$scent] ?? 0) + 1;
+                }
+            }
             
-        if ($timeRange !== 'all') {
-            $stmt->execute([$timeRange]);
-        }
-        
-        return $stmt->fetchAll();
-    }
-    
-    private function getMoodEffectDistribution($whereClause, $timeRange) {
-        $sql = "
-            SELECT 
-                pa.mood_effect as effect,
-                COUNT(*) as count
-            FROM quiz_results qr
-            JOIN product_attributes pa ON FIND_IN_SET(pa.product_id, qr.recommended_product_ids)
-            $whereClause
-            GROUP BY pa.mood_effect
-            ORDER BY count DESC
-        ";
-        
-        $stmt = $timeRange === 'all'
-            ? $this->pdo->query($sql)
-            : $this->pdo->prepare($sql);
+            // Get preferred mood and scent
+            arsort($moodCounts);
+            arsort($scentCounts);
+            $preferredMood = key($moodCounts);
+            $preferredScent = key($scentCounts);
             
-        if ($timeRange !== 'all') {
-            $stmt->execute([$timeRange]);
-        }
-        
-        return $stmt->fetchAll();
-    }
-    
-    private function getDailyCompletions($whereClause, $timeRange) {
-        $sql = "
-            SELECT 
-                DATE(created_at) as date,
-                COUNT(*) as count
-            FROM quiz_results
-            $whereClause
-            GROUP BY DATE(created_at)
-            ORDER BY date DESC
-            LIMIT 30
-        ";
-        
-        $stmt = $timeRange === 'all'
-            ? $this->pdo->query($sql)
-            : $this->pdo->prepare($sql);
+            // Get personalized recommendations
+            $stmt = $this->pdo->prepare("
+                SELECT DISTINCT p.*, pa.mood_effect, pa.scent_type
+                FROM products p
+                JOIN product_attributes pa ON p.id = pa.product_id
+                WHERE (pa.mood_effect = ? OR pa.scent_type = ?)
+                AND p.id NOT IN (
+                    SELECT JSON_UNQUOTE(JSON_EXTRACT(recommendations, '$[*]'))
+                    FROM quiz_results
+                    WHERE user_id = ?
+                )
+                ORDER BY RAND()
+                LIMIT ?
+            ");
             
-        if ($timeRange !== 'all') {
-            $stmt->execute([$timeRange]);
-        }
-        
-        return $stmt->fetchAll();
-    }
-    
-    private function getTopRecommendedProducts($whereClause, $timeRange) {
-        $sql = "
-            WITH recommended_counts AS (
-                SELECT 
-                    p.id,
-                    p.name,
-                    c.name as category,
-                    COUNT(*) as recommendation_count,
-                    COUNT(CASE WHEN o.id IS NOT NULL THEN 1 END) * 100.0 / COUNT(*) as conversion_rate
-                FROM quiz_results qr
-                JOIN products p ON FIND_IN_SET(p.id, qr.recommended_product_ids)
-                JOIN categories c ON p.category_id = c.id
-                LEFT JOIN orders o ON qr.user_id = o.user_id 
-                    AND o.created_at >= qr.created_at
-                    AND o.created_at <= DATE_ADD(qr.created_at, INTERVAL 30 DAY)
-                $whereClause
-                GROUP BY p.id, p.name, c.name
-            )
-            SELECT *
-            FROM recommended_counts
-            ORDER BY recommendation_count DESC
-            LIMIT 10
-        ";
-        
-        $stmt = $timeRange === 'all'
-            ? $this->pdo->query($sql)
-            : $this->pdo->prepare($sql);
+            $stmt->execute([$preferredMood, $preferredScent, $userId, $limit]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-        if ($timeRange !== 'all') {
-            $stmt->execute([$timeRange]);
+        } catch (PDOException $e) {
+            error_log("Error getting personalized recommendations: " . $e->getMessage());
+            throw $e;
         }
-        
-        return $stmt->fetchAll();
     }
 }

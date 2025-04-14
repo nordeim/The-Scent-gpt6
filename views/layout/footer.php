@@ -24,6 +24,7 @@
                     <h3>Newsletter</h3>
                     <p>Subscribe for updates and exclusive offers</p>
                     <form id="newsletter-form" class="newsletter-form">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                         <input type="email" name="email" placeholder="Enter your email" required>
                         <button type="submit" class="btn-primary">Subscribe</button>
                     </form>
@@ -44,23 +45,30 @@
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script>
         // Initialize AOS
-        AOS.init({
-            duration: 800,
-            offset: 100,
-            once: true
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init({
+                duration: 800,
+                offset: 100,
+                once: true
+            });
+
+            // Initialize particles.js if element exists
+            if (document.getElementById('particles-js')) {
+                particlesJS.load('particles-js', '/particles.json');
+            }
         });
 
         // Newsletter Form
         document.getElementById('newsletter-form')?.addEventListener('submit', function(e) {
             e.preventDefault();
-            const email = this.querySelector('input[name="email"]').value;
+            const formData = new FormData(this);
             
-            fetch('index.php?page=newsletter', {
+            fetch('index.php?page=newsletter&action=subscribe', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `email=${encodeURIComponent(email)}&source=footer`
+                body: new URLSearchParams(formData)
             })
             .then(response => response.json())
             .then(data => {
@@ -76,21 +84,25 @@
             });
         });
 
-        // Add to Cart functionality
+        // Add to Cart functionality with CSRF protection
         document.querySelectorAll('.add-to-cart')?.forEach(button => {
             button.addEventListener('click', function() {
                 const productId = this.dataset.productId;
+                const formData = new FormData();
+                formData.append('product_id', productId);
+                formData.append('quantity', '1');
+                formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
                 fetch('index.php?page=cart&action=add', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `product_id=${productId}&quantity=1`
+                    body: new URLSearchParams(formData)
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Update cart count
                         const cartCount = document.querySelector('.cart-count');
                         if (cartCount) {
                             cartCount.textContent = data.cartCount;

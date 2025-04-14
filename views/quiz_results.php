@@ -1,157 +1,88 @@
 <?php require_once __DIR__ . '/layout/header.php'; ?>
 
-<section class="quiz-results-section">
-    <div class="container">
-        <div class="results-container" data-aos="fade-up">
-            <h1>Your Personalized Scent Profile</h1>
-            
-            <?php if (isset($preferences) && !empty($preferences)): ?>
-                <div class="preference-history">
-                    <h3>Your Scent Journey</h3>
-                    <div class="preference-stats">
-                        <div class="top-preferences">
-                            <h4>Your Top Scent Types</h4>
-                            <ul>
-                                <?php foreach (array_slice($preferences, 0, 3) as $pref): ?>
-                                    <li>
-                                        <span class="pref-type"><?= htmlspecialchars(ucfirst($pref['scent_type'])) ?></span>
-                                        <span class="pref-count"><?= $pref['frequency'] ?> times chosen</span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                        <div class="mood-preferences">
-                            <h4>Your Preferred Effects</h4>
-                            <ul>
-                                <?php 
-                                $moodPrefs = array_filter($preferences, function($p) {
-                                    return isset($p['mood_effect']);
-                                });
-                                foreach (array_slice($moodPrefs, 0, 3) as $pref): 
-                                ?>
-                                    <li>
-                                        <span class="pref-type"><?= htmlspecialchars(ucfirst($pref['mood_effect'])) ?></span>
-                                        <span class="pref-count"><?= $pref['frequency'] ?> times chosen</span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
+<div class="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 py-20">
+    <!-- Particles Background -->
+    <div id="particles-js" class="absolute inset-0 z-0"></div>
 
-            <div class="recommendations">
-                <h2>Recommended Products for You</h2>
-                <div class="products-grid">
-                    <?php foreach ($recommendations as $product): ?>
-                        <div class="product-card" data-aos="fade-up">
-                            <div class="product-image">
-                                <img src="<?= htmlspecialchars($product['image']) ?>" 
-                                     alt="<?= htmlspecialchars($product['name']) ?>">
-                            </div>
-                            <div class="product-info">
-                                <h3><?= htmlspecialchars($product['name']) ?></h3>
-                                <p class="price">$<?= number_format($product['price'], 2) ?></p>
-                                <p class="description"><?= htmlspecialchars($product['description']) ?></p>
-                                <button class="add-to-cart" data-product-id="<?= $product['id'] ?>">
-                                    Add to Cart
-                                </button>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+    <div class="container mx-auto px-4 relative z-10">
+        <div class="max-w-4xl mx-auto">
+            <!-- Results Header -->
+            <div class="text-center mb-12" data-aos="fade-down">
+                <h1 class="text-4xl font-heading font-semibold mb-4">Your Perfect Scent Match</h1>
+                <p class="text-xl text-gray-600">Based on your preferences, we've curated these perfect matches for you.</p>
             </div>
 
-            <?php if (!isset($_SESSION['user'])): ?>
-                <div class="auth-prompt" data-aos="fade-up">
-                    <h3>Save Your Preferences</h3>
-                    <p>Create an account to save your quiz results and get personalized recommendations in the future.</p>
-                    <div class="auth-buttons">
-                        <a href="index.php?page=register" class="btn-primary">Sign Up</a>
-                        <a href="index.php?page=login" class="btn-secondary">Log In</a>
+            <!-- Product Recommendations -->
+            <div class="grid md:grid-cols-3 gap-8 mb-12">
+                <?php foreach ($products as $product): ?>
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden" data-aos="fade-up">
+                        <div class="aspect-w-1 aspect-h-1">
+                            <img 
+                                src="<?= htmlspecialchars($product['image']) ?>" 
+                                alt="<?= htmlspecialchars($product['name']) ?>"
+                                class="w-full h-full object-cover"
+                                loading="lazy"
+                            >
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-heading text-xl mb-2"><?= htmlspecialchars($product['name']) ?></h3>
+                            <p class="text-gray-600 text-sm mb-4"><?= htmlspecialchars($product['description']) ?></p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-primary font-semibold">$<?= number_format($product['price'], 2) ?></span>
+                                <a 
+                                    href="index.php?page=product&id=<?= $product['id'] ?>" 
+                                    class="btn-primary text-sm"
+                                >
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center space-x-4" data-aos="fade-up">
+                <a href="index.php?page=quiz" class="btn-secondary">
+                    Retake Quiz
+                </a>
+                <a href="index.php?page=products" class="btn-primary">
+                    Shop All Products
+                </a>
+            </div>
+
+            <!-- Newsletter Signup -->
+            <div class="mt-16 bg-white rounded-xl shadow-lg p-8 text-center" data-aos="fade-up">
+                <h3 class="font-heading text-2xl mb-4">Stay Updated</h3>
+                <p class="text-gray-600 mb-6">Sign up for our newsletter to receive personalized aromatherapy tips and exclusive offers.</p>
+                
+                <form action="index.php?page=newsletter&action=subscribe" method="POST" class="flex flex-col md:flex-row gap-4 justify-center">
+                    <input 
+                        type="email" 
+                        name="email" 
+                        placeholder="Enter your email address"
+                        class="flex-1 max-w-md px-4 py-2 rounded-lg border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                        required
+                    >
+                    <button type="submit" class="btn-primary whitespace-nowrap">
+                        Subscribe Now
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
-</section>
-
-<style>
-.preference-history {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-}
-
-.preference-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin-top: 1rem;
-}
-
-.top-preferences, .mood-preferences {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.pref-type {
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.pref-count {
-    color: #7f8c8d;
-    font-size: 0.9rem;
-    margin-left: 0.5rem;
-}
-
-.products-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
-    margin: 2rem 0;
-}
-</style>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle add to cart buttons
-    const addToCartButtons = document.querySelectorAll('.add-to-cart');
-    addToCartButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const productId = this.dataset.productId;
-            fetch('index.php?page=cart&action=add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: `product_id=${productId}&quantity=1`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update cart count
-                    const cartCount = document.querySelector('.cart-count');
-                    if (cartCount) {
-                        cartCount.textContent = data.cartCount;
-                    }
-                    
-                    // Show success message
-                    button.textContent = 'Added to Cart';
-                    button.classList.add('added');
-                    setTimeout(() => {
-                        button.textContent = 'Add to Cart';
-                        button.classList.remove('added');
-                    }, 2000);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize particles
+    particlesJS.load('particles-js', '/particles.json');
+
+    // Initialize AOS
+    AOS.init({
+        duration: 800,
+        offset: 100,
+        once: true
     });
 });
 </script>

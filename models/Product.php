@@ -12,20 +12,23 @@ class Product {
     }
     
     public function getFeatured() {
-        $stmt = $this->pdo->query("
-            SELECT 
-                p.*,
-                JSON_ARRAYAGG(b.name) as benefits,
-                JSON_ARRAYAGG(i.url) as gallery_images
+        $stmt = $this->pdo->prepare("
+            SELECT p.*, c.name as category_name,
+                   CASE 
+                       WHEN p.highlight_text IS NOT NULL THEN p.highlight_text
+                       WHEN p.stock_quantity <= p.low_stock_threshold THEN 'Low Stock'
+                       WHEN DATEDIFF(NOW(), p.created_at) <= 30 THEN 'New'
+                       ELSE NULL 
+                   END as display_badge
             FROM products p
-            LEFT JOIN product_benefits b ON p.id = b.product_id
-            LEFT JOIN product_images i ON p.id = i.product_id
+            LEFT JOIN categories c ON p.category_id = c.id
             WHERE p.is_featured = 1
-            GROUP BY p.id
-            ORDER BY p.featured_order ASC
+            ORDER BY p.created_at DESC
             LIMIT 6
         ");
-        return $stmt->fetchAll();
+        
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
     public function getById($id) {

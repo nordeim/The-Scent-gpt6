@@ -105,6 +105,8 @@ coverage/
 *.lcov
 *.lcov.info
 .nyc_output/
+public/videos/
+public/images/
 
 # Test results #
 ################

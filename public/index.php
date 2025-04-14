@@ -27,6 +27,7 @@ try {
     // Route to appropriate controller/action
     switch ($page) {
         case 'home':
+        default:
             require_once ROOT_PATH . '/controllers/ProductController.php';
             $controller = new ProductController($pdo);
             $controller->showHomePage();

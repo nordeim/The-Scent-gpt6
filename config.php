@@ -76,8 +76,8 @@ define('SECURITY_SETTINGS', [
 // Database Configuration
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'the_scent');
-define('DB_USER', 'scent_user');
-define('DB_PASS', 'StrongPassword123');
+define('DB_USER', 'root');
+define('DB_PASS', 'Admin1234');
 define('BASE_URL', '/');
 
 // Ensure all database constants are properly escaped
