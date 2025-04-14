@@ -2,12 +2,22 @@
 
 class ErrorHandler {
     private static $logger;
+    private static $securityLogger;
+    private static $errorCount = [];
+    private static $lastErrorTime = [];
     
     public static function init($logger = null) {
         self::$logger = $logger;
+        self::$securityLogger = new SecurityLogger();
+        
         set_error_handler([self::class, 'handleError']);
         set_exception_handler([self::class, 'handleException']);
         register_shutdown_function([self::class, 'handleFatalError']);
+        
+        // Set up error log rotation
+        if (!is_dir(__DIR__ . '/../logs')) {
+            mkdir(__DIR__ . '/../logs', 0750, true);
+        }
     }
     
     public static function handleError($errno, $errstr, $errfile, $errline) {
@@ -19,9 +29,11 @@ class ErrorHandler {
             'type' => self::getErrorType($errno),
             'message' => $errstr,
             'file' => $errfile,
-            'line' => $errline
+            'line' => $errline,
+            'context' => self::getSecureContext()
         ];
         
+        self::trackError($error);
         self::logError($error);
         
         if (ENVIRONMENT === 'development') {
@@ -33,14 +45,46 @@ class ErrorHandler {
         return true;
     }
     
+    private static function trackError($error) {
+        $errorKey = md5($error['file'] . $error['line'] . $error['type']);
+        $now = time();
+        
+        if (!isset(self::$errorCount[$errorKey])) {
+            self::$errorCount[$errorKey] = 0;
+            self::$lastErrorTime[$errorKey] = $now;
+        }
+        
+        // Reset count if more than an hour has passed
+        if ($now - self::$lastErrorTime[$errorKey] > 3600) {
+            self::$errorCount[$errorKey] = 0;
+        }
+        
+        self::$errorCount[$errorKey]++;
+        self::$lastErrorTime[$errorKey] = $now;
+        
+        // Alert on high frequency errors
+        if (self::$errorCount[$errorKey] > 10) {
+            self::$securityLogger->alert("High frequency error detected", [
+                'error' => $error,
+                'count' => self::$errorCount[$errorKey],
+                'timespan' => $now - self::$lastErrorTime[$errorKey]
+            ]);
+        }
+    }
+    
     public static function handleException($exception) {
         $error = [
             'type' => get_class($exception),
             'message' => $exception->getMessage(),
             'file' => $exception->getFile(),
             'line' => $exception->getLine(),
-            'trace' => $exception->getTraceAsString()
+            'trace' => $exception->getTraceAsString(),
+            'context' => self::getSecureContext()
         ];
+        
+        if ($exception instanceof SecurityException) {
+            self::$securityLogger->critical("Security exception occurred", $error);
+        }
         
         self::logError($error);
         
@@ -100,6 +144,22 @@ class ErrorHandler {
         }
     }
     
+    private static function getSecureContext() {
+        $context = [
+            'url' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+            'method' => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+        
+        // Add user context if available
+        if (isset($_SESSION['user_id'])) {
+            $context['user_id'] = $_SESSION['user_id'];
+        }
+        
+        return $context;
+    }
+    
     private static function logError($error) {
         $message = sprintf(
             "[%s] %s: %s in %s on line %d",
@@ -114,11 +174,36 @@ class ErrorHandler {
             $message .= "\nStack trace:\n" . $error['trace'];
         }
         
+        if (isset($error['context'])) {
+            $message .= "\nContext: " . json_encode($error['context']);
+        }
+        
         if (self::$logger) {
             self::$logger->error($message);
         } else {
             error_log($message);
         }
+        
+        // Log to security log if it's a security-related error
+        if (self::isSecurityError($error)) {
+            self::$securityLogger->warning("Security-related error detected", $error);
+        }
+    }
+    
+    private static function isSecurityError($error) {
+        $securityKeywords = [
+            'injection', 'xss', 'csrf', 'auth', 'password',
+            'login', 'permission', 'access', 'token', 'ssl',
+            'encryption', 'sql', 'database', 'overflow'
+        ];
+        
+        foreach ($securityKeywords as $keyword) {
+            if (stripos($error['message'], $keyword) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     private static function displayError($error) {
@@ -142,6 +227,55 @@ class ErrorHandler {
             echo "\nAn error occurred. Please check the error logs for details.\n";
         } else {
             require_once __DIR__ . '/../views/error.php';
+        }
+    }
+}
+
+class SecurityLogger {
+    private $logFile;
+    
+    public function __construct() {
+        $this->logFile = __DIR__ . '/../logs/security.log';
+    }
+    
+    public function emergency($message, $context = []) {
+        $this->log('EMERGENCY', $message, $context);
+    }
+    
+    public function alert($message, $context = []) {
+        $this->log('ALERT', $message, $context);
+    }
+    
+    public function critical($message, $context = []) {
+        $this->log('CRITICAL', $message, $context);
+    }
+    
+    public function error($message, $context = []) {
+        $this->log('ERROR', $message, $context);
+    }
+    
+    public function warning($message, $context = []) {
+        $this->log('WARNING', $message, $context);
+    }
+    
+    private function log($level, $message, $context) {
+        $timestamp = date('Y-m-d H:i:s');
+        $contextStr = json_encode($context);
+        $logMessage = "[$timestamp] [$level] $message | $contextStr\n";
+        
+        file_put_contents($this->logFile, $logMessage, FILE_APPEND);
+        
+        // Alert admins on critical issues
+        if (in_array($level, ['EMERGENCY', 'ALERT', 'CRITICAL'])) {
+            $this->alertAdmins($level, $message, $context);
+        }
+    }
+    
+    private function alertAdmins($level, $message, $context) {
+        // Implementation for alerting admins (email, SMS, etc.)
+        if (class_exists('EmailService')) {
+            $emailService = new EmailService();
+            $emailService->sendSecurityAlert($level, $message, $context);
         }
     }
 }

@@ -1,6 +1,10 @@
 <?php
 
 class SecurityMiddleware {
+    private static $ipTracker = [];
+    private static $requestTracker = [];
+    private static $encryptionKey;
+
     public static function apply() {
         // Set security headers
         header("X-Frame-Options: DENY");
@@ -31,8 +35,96 @@ class SecurityMiddleware {
             session_regenerate_id(true);
             $_SESSION['last_regeneration'] = time();
         }
+
+        // Initialize encryption key
+        if (!isset($_ENV['ENCRYPTION_KEY'])) {
+            self::$encryptionKey = self::generateSecureKey();
+        } else {
+            self::$encryptionKey = $_ENV['ENCRYPTION_KEY'];
+        }
+        
+        // Track request patterns
+        self::trackRequest();
     }
-    
+
+    private static function trackRequest() {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $timestamp = time();
+        $uri = $_SERVER['REQUEST_URI'];
+        
+        if (!isset(self::$requestTracker[$ip])) {
+            self::$requestTracker[$ip] = [];
+        }
+        
+        // Clean old entries
+        self::$requestTracker[$ip] = array_filter(
+            self::$requestTracker[$ip],
+            fn($t) => $t > ($timestamp - 3600)
+        );
+        
+        self::$requestTracker[$ip][] = $timestamp;
+        
+        // Check for anomalies
+        if (self::detectAnomaly($ip)) {
+            self::handleAnomaly($ip);
+        }
+    }
+
+    private static function detectAnomaly($ip) {
+        if (!isset(self::$requestTracker[$ip])) {
+            return false;
+        }
+
+        $requests = self::$requestTracker[$ip];
+        $count = count($requests);
+        $timespan = end($requests) - reset($requests);
+
+        // Detect rapid requests
+        if ($count > 100 && $timespan < 60) { // More than 100 requests per minute
+            return true;
+        }
+
+        // Detect pattern-based attacks
+        if (self::detectPatternAttack($ip)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static function detectPatternAttack($ip) {
+        if (!isset($_SERVER['REQUEST_URI'])) {
+            return false;
+        }
+
+        $patterns = [
+            '/union\s+select/i',
+            '/exec(\s|\+)+(x?p?\w+)/i',
+            '/\.\.\//i',
+            '/<(script|iframe|object|embed|applet)/i'
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $_SERVER['REQUEST_URI'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function handleAnomaly($ip) {
+        // Log the anomaly
+        error_log("Security anomaly detected from IP: {$ip}");
+        
+        // Add to temporary blacklist
+        self::$ipTracker[$ip] = time();
+        
+        // Return 403 response
+        http_response_code(403);
+        exit('Access denied due to suspicious activity');
+    }
+
     public static function validateInput($input, $type, $options = []) {
         if ($input === null) {
             return null;
@@ -123,12 +215,46 @@ class SecurityMiddleware {
                     return false;
                 }
                 return $safe;
+
+            case 'xml':
+                return self::validateXML($input);
+            case 'json':
+                return self::validateJSON($input);
+            case 'html':
+                return self::validateHTML($input);
                 
             default:
                 return false;
         }
     }
-    
+
+    private static function validateXML($input) {
+        // Prevent XML injection
+        $dangerousElements = ['<!ENTITY', '<!ELEMENT', '<!DOCTYPE'];
+        foreach ($dangerousElements as $element) {
+            if (stripos($input, $element) !== false) {
+                return false;
+            }
+        }
+        
+        // Validate XML structure
+        libxml_use_internal_errors(true);
+        $doc = simplexml_load_string($input);
+        return $doc !== false;
+    }
+
+    private static function validateJSON($input) {
+        json_decode($input);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
+
+    private static function validateHTML($input) {
+        // Strip dangerous HTML
+        $config = HTMLPurifier_Config::createDefault();
+        $purifier = new HTMLPurifier($config);
+        return $purifier->purify($input);
+    }
+
     public static function validateCSRF() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) ||
@@ -253,5 +379,36 @@ class SecurityMiddleware {
         ];
         
         return in_array($ip, $blacklist);
+    }
+
+    public static function encrypt($data) {
+        $iv = random_bytes(16);
+        $encrypted = openssl_encrypt(
+            $data,
+            'AES-256-CBC',
+            self::$encryptionKey,
+            0,
+            $iv
+        );
+        
+        return base64_encode($iv . $encrypted);
+    }
+
+    public static function decrypt($data) {
+        $data = base64_decode($data);
+        $iv = substr($data, 0, 16);
+        $encrypted = substr($data, 16);
+        
+        return openssl_decrypt(
+            $encrypted,
+            'AES-256-CBC',
+            self::$encryptionKey,
+            0,
+            $iv
+        );
+    }
+
+    private static function generateSecureKey() {
+        return bin2hex(random_bytes(32));
     }
 }

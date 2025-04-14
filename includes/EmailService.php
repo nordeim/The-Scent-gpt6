@@ -6,17 +6,25 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 class EmailService {
     private $mailer;
+    private $templatePath;
+    private $securityLogger;
+    private $dkimPrivateKey;
+    private $emailQueue = [];
     private $pdo;
 
     public function __construct() {
-        $this->mailer = new PHPMailer(true);
-        $this->setupMailer();
+        $this->templatePath = __DIR__ . '/../views/emails/';
+        $this->securityLogger = new SecurityLogger();
+        $this->initializeMailer();
+        $this->loadDKIMKey();
 
         global $pdo;
         $this->pdo = $pdo;
     }
 
-    private function setupMailer() {
+    private function initializeMailer() {
+        $this->mailer = new PHPMailer(true);
+
         try {
             $this->mailer->isSMTP();
             $this->mailer->Host = SMTP_HOST;
@@ -25,11 +33,29 @@ class EmailService {
             $this->mailer->Password = SMTP_PASS;
             $this->mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $this->mailer->Port = SMTP_PORT;
+            $this->mailer->CharSet = 'UTF-8';
+            $this->mailer->Encoding = 'base64';
             $this->mailer->setFrom(SMTP_FROM, SMTP_FROM_NAME);
-            $this->mailer->isHTML(true);
+
+            // Enable DKIM signing
+            if ($this->dkimPrivateKey) {
+                $this->mailer->DKIM_domain = parse_url(BASE_URL, PHP_URL_HOST);
+                $this->mailer->DKIM_private = $this->dkimPrivateKey;
+                $this->mailer->DKIM_selector = 'thescent';
+                $this->mailer->DKIM_passphrase = '';
+                $this->mailer->DKIM_identity = $this->mailer->From;
+            }
+
         } catch (Exception $e) {
-            error_log("Mailer setup error: " . $e->getMessage());
-            throw new Exception("Failed to configure email service");
+            $this->logError('Mailer initialization failed: ' . $e->getMessage());
+            throw new Exception('Email service initialization failed');
+        }
+    }
+
+    private function loadDKIMKey() {
+        $keyPath = __DIR__ . '/../config/dkim/private.key';
+        if (file_exists($keyPath)) {
+            $this->dkimPrivateKey = file_get_contents($keyPath);
         }
     }
 
@@ -243,5 +269,219 @@ class EmailService {
         ob_start();
         include __DIR__ . '/../views/emails/shipping_update.php';
         return ob_get_clean();
+    }
+
+    public function sendSecurityAlert($level, $message, $context) {
+        $template = 'security_alert';
+        $subject = "Security Alert: {$level}";
+        $to = SECURITY_ALERT_EMAIL;
+
+        $data = [
+            'level' => $level,
+            'message' => $message,
+            'context' => $context,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+
+        $this->sendEmail($to, $subject, $template, $data, true);
+    }
+
+    public function sendEmail($to, $subject, $template, $data = [], $priority = false) {
+        try {
+            $this->validateEmailAddress($to);
+            $this->validateTemplate($template);
+
+            $html = $this->renderTemplate($template, $data);
+            $text = $this->convertToPlainText($html);
+
+            $this->mailer->clearAddresses();
+            $this->mailer->addAddress($to);
+            $this->mailer->Subject = $this->sanitizeSubject($subject);
+            $this->mailer->isHTML(true);
+            $this->mailer->Body = $html;
+            $this->mailer->AltBody = $text;
+
+            // Set message priority
+            if ($priority) {
+                $this->mailer->Priority = 1;
+                $this->mailer->AddCustomHeader('X-Priority', '1');
+            }
+
+            // Add message ID and other security headers
+            $this->addSecurityHeaders();
+
+            if ($priority) {
+                $sent = $this->mailer->send();
+            } else {
+                $this->queueEmail($to, $subject, $html, $text);
+                $sent = true;
+            }
+
+            if ($sent) {
+                $this->logEmailSent($to, $subject, $template);
+                return true;
+            }
+
+        } catch (Exception $e) {
+            $this->logError('Email sending failed: ' . $e->getMessage(), [
+                'to' => $to,
+                'subject' => $subject,
+                'template' => $template
+            ]);
+            throw new Exception('Failed to send email');
+        }
+
+        return false;
+    }
+
+    private function validateEmailAddress($email) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception('Invalid email address');
+        }
+
+        // Check for suspicious patterns
+        $suspiciousPatterns = [
+            '/\.{2,}/', // Multiple dots
+            '/[<>]/',   // HTML tags
+            '/\s/'      // Whitespace
+        ];
+
+        foreach ($suspiciousPatterns as $pattern) {
+            if (preg_match($pattern, $email)) {
+                $this->securityLogger->warning('Suspicious email address detected', [
+                    'email' => $email,
+                    'pattern' => $pattern
+                ]);
+                throw new Exception('Invalid email address');
+            }
+        }
+    }
+
+    private function validateTemplate($template) {
+        $templateFile = $this->templatePath . $template . '.php';
+        if (!file_exists($templateFile)) {
+            throw new Exception('Email template not found');
+        }
+
+        // Validate template file permissions
+        $perms = fileperms($templateFile);
+        if (($perms & 0x0002) || ($perms & 0x0020)) {
+            $this->securityLogger->critical('Insecure template file permissions', [
+                'template' => $template,
+                'permissions' => substr(sprintf('%o', $perms), -4)
+            ]);
+            throw new Exception('Insecure template configuration');
+        }
+    }
+
+    private function renderTemplate($template, $data) {
+        ob_start();
+        extract($this->sanitizeTemplateData($data));
+        include $this->templatePath . $template . '.php';
+        return ob_get_clean();
+    }
+
+    private function sanitizeTemplateData($data) {
+        $sanitized = [];
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $sanitized[$key] = $this->sanitizeTemplateData($value);
+            } else {
+                $sanitized[$key] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+            }
+        }
+        return $sanitized;
+    }
+
+    private function sanitizeSubject($subject) {
+        return preg_replace('/[\r\n]+/', '', trim($subject));
+    }
+
+    private function convertToPlainText($html) {
+        // Remove HTML tags while preserving structure
+        $text = strip_tags(str_replace(
+            ['<br>', '<br/>', '<br />', '<p>', '</p>', '<div>', '</div>'],
+            ["\n", "\n", "\n", "\n\n", "\n", "\n", "\n"],
+            $html
+        ));
+
+        // Clean up whitespace
+        $text = preg_replace('/[ \t]+/', ' ', $text);
+        $text = preg_replace('/\n\s+\n/', "\n\n", $text);
+
+        return trim($text);
+    }
+
+    private function addSecurityHeaders() {
+        $messageId = sprintf(
+            '<%s@%s>',
+            uniqid('email-', true),
+            parse_url(BASE_URL, PHP_URL_HOST)
+        );
+
+        $this->mailer->MessageID = $messageId;
+        $this->mailer->AddCustomHeader('X-Mailer', 'TheScent-Secure-Mailer');
+        $this->mailer->AddCustomHeader('X-Content-Type-Options', 'nosniff');
+        $this->mailer->AddCustomHeader('X-XSS-Protection', '1; mode=block');
+    }
+
+    private function queueEmail($to, $subject, $html, $text) {
+        $this->emailQueue[] = [
+            'to' => $to,
+            'subject' => $subject,
+            'html' => $html,
+            'text' => $text,
+            'attempts' => 0,
+            'created' => time()
+        ];
+
+        // Process queue if it reaches threshold or periodically
+        if (count($this->emailQueue) >= 10) {
+            $this->processEmailQueue();
+        }
+    }
+
+    public function processEmailQueue() {
+        foreach ($this->emailQueue as $key => $email) {
+            try {
+                $this->mailer->clearAddresses();
+                $this->mailer->addAddress($email['to']);
+                $this->mailer->Subject = $email['subject'];
+                $this->mailer->Body = $email['html'];
+                $this->mailer->AltBody = $email['text'];
+
+                if ($this->mailer->send()) {
+                    unset($this->emailQueue[$key]);
+                    $this->logEmailSent($email['to'], $email['subject'], 'queued');
+                } else {
+                    $this->emailQueue[$key]['attempts']++;
+                    if ($this->emailQueue[$key]['attempts'] >= 3) {
+                        $this->logError('Email queue processing failed after 3 attempts', [
+                            'to' => $email['to'],
+                            'subject' => $email['subject']
+                        ]);
+                        unset($this->emailQueue[$key]);
+                    }
+                }
+            } catch (Exception $e) {
+                $this->logError('Queue processing error: ' . $e->getMessage(), [
+                    'to' => $email['to'],
+                    'subject' => $email['subject']
+                ]);
+            }
+        }
+    }
+
+    private function logEmailSent($to, $subject, $template) {
+        $this->securityLogger->info('Email sent successfully', [
+            'to' => $to,
+            'subject' => $subject,
+            'template' => $template,
+            'message_id' => $this->mailer->MessageID
+        ]);
+    }
+
+    private function logError($message, $context = []) {
+        $this->securityLogger->error($message, $context);
     }
 }

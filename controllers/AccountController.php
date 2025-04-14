@@ -19,12 +19,26 @@ class AccountController extends BaseController {
         'reset' => ['attempts' => 3, 'window' => 3600]  // 3 attempts per hour
     ];
     
+    private $securityHeaders = [
+        'Strict-Transport-Security' => 'max-age=31536000; includeSubDomains',
+        'X-Content-Type-Options' => 'nosniff',
+        'X-Frame-Options' => 'SAMEORIGIN',
+        'X-XSS-Protection' => '1; mode=block',
+        'Content-Security-Policy' => "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';",
+        'Referrer-Policy' => 'strict-origin-when-cross-origin'
+    ];
+
     public function __construct($pdo) {
         parent::__construct($pdo);
         $this->emailService = new EmailService();
         $this->userModel = new User($pdo);
         $this->orderModel = new Order($pdo);
         $this->quizModel = new Quiz($pdo);
+        
+        // Set security headers
+        foreach ($this->securityHeaders as $header => $value) {
+            header("$header: $value");
+        }
     }
     
     public function showDashboard() {
@@ -173,7 +187,7 @@ class AccountController extends BaseController {
                     
                     // Validate password strength
                     if (!$this->isPasswordStrong($newPassword)) {
-                        throw new Exception('Password must be at least 8 characters and contain uppercase, number, and special character.');
+                        throw new Exception('Password must be at least 12 characters, contain uppercase, lowercase, number, special character, and no character repeated 3+ times.');
                     }
                     
                     $this->userModel->updatePassword($userId, $newPassword);
@@ -287,7 +301,7 @@ class AccountController extends BaseController {
             }
             
             if (!$this->isPasswordStrong($password)) {
-                throw new Exception('Password must be at least 8 characters and contain uppercase, number, and special character.');
+                throw new Exception('Password must be at least 12 characters, contain uppercase, lowercase, number, special character, and no character repeated 3+ times.');
             }
             
             $this->beginTransaction();
@@ -360,10 +374,13 @@ class AccountController extends BaseController {
     }
     
     private function isPasswordStrong($password) {
-        return strlen($password) >= 8 && 
-               preg_match('/[A-Z]/', $password) && 
-               preg_match('/[0-9]/', $password) && 
-               preg_match('/[^A-Za-z0-9]/', $password);
+        // Enhanced password requirements
+        return strlen($password) >= 12 &&           // Minimum length
+               preg_match('/[A-Z]/', $password) &&  // Uppercase
+               preg_match('/[a-z]/', $password) &&  // Lowercase
+               preg_match('/[0-9]/', $password) &&  // Number
+               preg_match('/[^A-Za-z0-9]/', $password) && // Special char
+               !preg_match('/(.)\1{2,}/', $password);    // No character repeated 3+ times
     }
     
     private function getResetPasswordUrl($token) {
@@ -382,6 +399,65 @@ class AccountController extends BaseController {
             $this->db->insert('audit_trail', $data);
         } catch (Exception $e) {
             error_log("Audit trail error: " . $e->getMessage());
+        }
+    }
+
+    private function monitorSuspiciousActivity($userId, $activityType) {
+        $suspiciousPatterns = [
+            'multiple_failed_logins' => 3,    // 3 failed attempts
+            'password_resets' => 2,           // 2 resets in 24h
+            'profile_updates' => 5            // 5 updates in 24h
+        ];
+
+        try {
+            // Check activity count in last 24h
+            $activityCount = $this->userModel->getRecentActivityCount(
+                $userId, 
+                $activityType, 
+                'P1D'  // Last 24 hours
+            );
+
+            if ($activityCount >= $suspiciousPatterns[$activityType]) {
+                // Log suspicious activity
+                error_log("Suspicious activity detected: {$activityType} for user {$userId}");
+                
+                // Notify admin
+                $this->emailService->notifyAdminOfSuspiciousActivity(
+                    $userId, 
+                    $activityType, 
+                    $activityCount
+                );
+
+                // Optional: Take defensive action like temporary lockout
+                if ($activityType === 'multiple_failed_logins') {
+                    $this->lockAccount($userId, 'suspicious_activity');
+                }
+            }
+        } catch (Exception $e) {
+            // Log error but don't block the main flow
+            error_log("Error monitoring activity: " . $e->getMessage());
+        }
+    }
+
+    private function lockAccount($userId, $reason) {
+        try {
+            $this->beginTransaction();
+            
+            // Set account status to locked
+            $this->userModel->updateAccountStatus($userId, 'locked');
+            
+            // Log the lockout
+            $this->logAuditTrail('account_lockout', $userId, ['reason' => $reason]);
+            
+            // Notify user
+            $user = $this->userModel->getById($userId);
+            $this->emailService->sendAccountLockoutNotification($user, $reason);
+            
+            $this->commit();
+            
+        } catch (Exception $e) {
+            $this->rollback();
+            throw $e;
         }
     }
 
