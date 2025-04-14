@@ -13,11 +13,16 @@ class Product {
     
     public function getFeatured() {
         $stmt = $this->pdo->query("
-            SELECT p.*, c.name as category_name, pa.scent_type, pa.mood_effect 
+            SELECT 
+                p.*,
+                JSON_ARRAYAGG(b.name) as benefits,
+                JSON_ARRAYAGG(i.url) as gallery_images
             FROM products p
-            JOIN categories c ON p.category_id = c.id
-            JOIN product_attributes pa ON p.id = pa.product_id
+            LEFT JOIN product_benefits b ON p.id = b.product_id
+            LEFT JOIN product_images i ON p.id = i.product_id
             WHERE p.is_featured = 1
+            GROUP BY p.id
+            ORDER BY p.featured_order ASC
             LIMIT 6
         ");
         return $stmt->fetchAll();

@@ -29,8 +29,7 @@ try {
         case 'home':
             require_once ROOT_PATH . '/controllers/ProductController.php';
             $controller = new ProductController($pdo);
-            $featuredProducts = $controller->getFeaturedProducts();
-            require_once ROOT_PATH . '/views/home.php';
+            $controller->showHomePage();
             break;
             
         case 'products':
