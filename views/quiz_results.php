@@ -1,43 +1,70 @@
-<?php require_once 'layout/header.php'; ?>
+<?php require_once __DIR__ . '/layout/header.php'; ?>
 
-<section class="quiz-results">
+<section class="quiz-results-section">
     <div class="container">
         <div class="results-container" data-aos="fade-up">
-            <h1>Your Perfect Scent Matches</h1>
-            <p class="results-intro">Based on your preferences, we've curated these personalized recommendations just for you.</p>
+            <h1>Your Personalized Scent Profile</h1>
             
-            <div class="recommendations-grid">
-                <?php foreach ($recommendations as $index => $product): ?>
-                    <div class="product-card" data-aos="fade-up" data-aos-delay="<?= $index * 100 ?>">
-                        <div class="product-image">
-                            <img src="<?= htmlspecialchars($product['image_url']) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+            <?php if (isset($preferences) && !empty($preferences)): ?>
+                <div class="preference-history">
+                    <h3>Your Scent Journey</h3>
+                    <div class="preference-stats">
+                        <div class="top-preferences">
+                            <h4>Your Top Scent Types</h4>
+                            <ul>
+                                <?php foreach (array_slice($preferences, 0, 3) as $pref): ?>
+                                    <li>
+                                        <span class="pref-type"><?= htmlspecialchars(ucfirst($pref['scent_type'])) ?></span>
+                                        <span class="pref-count"><?= $pref['frequency'] ?> times chosen</span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
                         </div>
-                        <div class="product-info">
-                            <h3><?= htmlspecialchars($product['name']) ?></h3>
-                            <p class="product-description"><?= htmlspecialchars($product['description']) ?></p>
-                            <p class="product-price">$<?= number_format($product['price'], 2) ?></p>
-                            <div class="product-actions">
-                                <a href="index.php?page=products&id=<?= $product['id'] ?>" class="btn-secondary">View Details</a>
-                                <button class="btn-primary add-to-cart" data-product-id="<?= $product['id'] ?>">Add to Cart</button>
-                            </div>
+                        <div class="mood-preferences">
+                            <h4>Your Preferred Effects</h4>
+                            <ul>
+                                <?php 
+                                $moodPrefs = array_filter($preferences, function($p) {
+                                    return isset($p['mood_effect']);
+                                });
+                                foreach (array_slice($moodPrefs, 0, 3) as $pref): 
+                                ?>
+                                    <li>
+                                        <span class="pref-type"><?= htmlspecialchars(ucfirst($pref['mood_effect'])) ?></span>
+                                        <span class="pref-count"><?= $pref['frequency'] ?> times chosen</span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
                         </div>
                     </div>
-                <?php endforeach; ?>
-            </div>
-            
-            <div class="results-cta" data-aos="fade-up">
-                <h2>Why These Products?</h2>
-                <p>These recommendations are tailored to your unique preferences and lifestyle. Each product has been carefully selected to help you achieve your aromatherapy goals.</p>
-                
-                <div class="next-steps">
-                    <a href="index.php?page=products" class="btn-secondary">Browse All Products</a>
-                    <a href="#" class="btn-primary open-chat">Get Expert Advice</a>
+                </div>
+            <?php endif; ?>
+
+            <div class="recommendations">
+                <h2>Recommended Products for You</h2>
+                <div class="products-grid">
+                    <?php foreach ($recommendations as $product): ?>
+                        <div class="product-card" data-aos="fade-up">
+                            <div class="product-image">
+                                <img src="<?= htmlspecialchars($product['image']) ?>" 
+                                     alt="<?= htmlspecialchars($product['name']) ?>">
+                            </div>
+                            <div class="product-info">
+                                <h3><?= htmlspecialchars($product['name']) ?></h3>
+                                <p class="price">$<?= number_format($product['price'], 2) ?></p>
+                                <p class="description"><?= htmlspecialchars($product['description']) ?></p>
+                                <button class="add-to-cart" data-product-id="<?= $product['id'] ?>">
+                                    Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
-            
-            <?php if (!isLoggedIn()): ?>
-                <div class="save-results-prompt" data-aos="fade-up">
-                    <h3>Want to save your results?</h3>
+
+            <?php if (!isset($_SESSION['user'])): ?>
+                <div class="auth-prompt" data-aos="fade-up">
+                    <h3>Save Your Preferences</h3>
                     <p>Create an account to save your quiz results and get personalized recommendations in the future.</p>
                     <div class="auth-buttons">
                         <a href="index.php?page=register" class="btn-primary">Sign Up</a>
@@ -48,6 +75,47 @@
         </div>
     </div>
 </section>
+
+<style>
+.preference-history {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.preference-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.top-preferences, .mood-preferences {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pref-type {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.pref-count {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    margin: 2rem 0;
+}
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -60,6 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: `product_id=${productId}&quantity=1`
             })
@@ -73,25 +142,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     // Show success message
-                    alert('Product added to cart!');
+                    button.textContent = 'Added to Cart';
+                    button.classList.add('added');
+                    setTimeout(() => {
+                        button.textContent = 'Add to Cart';
+                        button.classList.remove('added');
+                    }, 2000);
                 }
             })
             .catch(error => console.error('Error:', error));
         });
     });
-    
-    // Handle chat button
-    const chatButton = document.querySelector('.open-chat');
-    if (chatButton) {
-        chatButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Initialize chat widget
-            if (window.initChat) {
-                window.initChat();
-            }
-        });
-    }
 });
 </script>
 
-<?php require_once 'layout/footer.php'; ?>
+<?php require_once __DIR__ . '/layout/footer.php'; ?>

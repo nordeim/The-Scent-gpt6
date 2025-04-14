@@ -118,6 +118,29 @@ try {
             }
             break;
             
+        case 'admin':
+            require_once ROOT_PATH . '/includes/auth.php';
+            if (!isAdmin()) {
+                header('Location: index.php?page=login');
+                exit;
+            }
+
+            $section = SecurityMiddleware::validateInput($_GET['section'] ?? 'dashboard', 'string');
+            
+            switch ($section) {
+                // ...existing sections...
+                case 'quiz_analytics':
+                    require_once ROOT_PATH . '/controllers/QuizController.php';
+                    $controller = new QuizController($pdo);
+                    $controller->getAnalytics();
+                    break;
+                    
+                default:
+                    require_once ROOT_PATH . '/views/admin/dashboard.php';
+                    break;
+            }
+            break;
+            
         // Add other routes as needed...
             
         default:

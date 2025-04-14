@@ -1,4 +1,7 @@
-<?php require_once __DIR__ . '/../layout/header.php'; ?>
+<?php 
+$section = 'coupons';
+require_once __DIR__ . '/../layout/admin_header.php'; 
+?>
 
 <section class="admin-section">
     <div class="container">
@@ -310,4 +313,4 @@ document.getElementById('discount_type').addEventListener('change', function() {
 }
 </style>
 
-<?php require_once __DIR__ . '/../layout/footer.php'; ?>
+<?php require_once __DIR__ . '/../layout/admin_footer.php'; ?>
