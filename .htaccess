@@ -1,0 +1,14 @@
+# Deny access to sensitive files
+<FilesMatch "^(config\.php|.*\.log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes
+
+# Protect hidden files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

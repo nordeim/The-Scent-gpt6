@@ -255,8 +255,34 @@ document.getElementById('checkoutForm').addEventListener('submit', async functio
     if (error) {
         const messageContainer = document.getElementById('payment-message');
         messageContainer.textContent = error.message;
-        messageContainer.classList.remove('hidden');
+        messageContainer.classList.add('error');
+        
+        // Re-enable form
         setLoading(false);
+        
+        // Scroll to error message
+        messageContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Handle specific error types
+        switch (error.type) {
+            case 'card_error':
+            case 'validation_error':
+                // These errors should show in the payment form UI
+                elements.getElement('card').focus();
+                break;
+            
+            case 'invalid_request_error':
+                // Reload the page if the PaymentIntent was invalid
+                window.location.reload();
+                break;
+            
+            default:
+                // For all other errors, allow retry
+                submitButton.disabled = false;
+                break;
+        }
+    } else {
+        // Payment successful, redirect to confirmation page handled by return_url
     }
 });
 

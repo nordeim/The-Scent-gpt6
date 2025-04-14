@@ -172,6 +172,9 @@ document.addEventListener('DOMContentLoaded', function() {
             nextBtn.style.display = 'none';
             submitBtn.style.display = 'block';
         }
+
+        // Update progress
+        updateProgress();
     });
     
     // Handle previous button
@@ -186,6 +189,72 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         nextBtn.style.display = 'block';
         submitBtn.style.display = 'none';
+
+        // Update progress
+        updateProgress();
+    });
+
+    // Track and display progress
+    const progressBar = document.createElement('div');
+    progressBar.className = 'quiz-progress';
+    form.insertBefore(progressBar, form.firstChild);
+
+    function updateProgress() {
+        const progress = ((currentQuestion + 1) / questions.length) * 100;
+        progressBar.style.width = `${progress}%`;
+        progressBar.setAttribute('aria-valuenow', progress);
+    }
+
+    // Initialize progress
+    updateProgress();
+
+    // Enhance form submission handling
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Validate all questions are answered
+        let allAnswered = true;
+        questions.forEach((question, index) => {
+            const inputs = question.querySelectorAll('input[type="radio"]');
+            let questionAnswered = false;
+            inputs.forEach(input => {
+                if (input.checked) questionAnswered = true;
+            });
+            if (!questionAnswered) {
+                allAnswered = false;
+                question.classList.add('unanswered');
+            } else {
+                question.classList.remove('unanswered');
+            }
+        });
+
+        if (!allAnswered) {
+            alert('Please answer all questions to get your personalized recommendations.');
+            return;
+        }
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finding your perfect scent...';
+        
+        try {
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) throw new Error('Network response was not ok');
+            
+            const result = await response.text();
+            document.querySelector('.quiz-section').innerHTML = result;
+            
+        } catch (error) {
+            console.error('Error:', error);
+            alert('There was a problem submitting your quiz. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Get My Recommendations';
+        }
     });
 });
 </script>

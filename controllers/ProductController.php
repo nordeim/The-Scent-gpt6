@@ -1,199 +1,292 @@
 <?php
+require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Product.php';
 
-function showHomePage() {
-    global $pdo;
-    $productModel = new Product($pdo);
-    $featuredProducts = $productModel->getFeatured();
+class ProductController extends BaseController {
+    private $productModel;
+    private $cache = [];
+    private $itemsPerPage = 12;
     
-    $pageTitle = "The Scent - Premium Aromatherapy Products";
-    require_once __DIR__ . '/../views/home.php';
-}
-
-function showProductList() {
-    global $pdo;
-    $productModel = new Product($pdo);
-    
-    // Handle search
-    $searchQuery = $_GET['search'] ?? null;
-    $category = $_GET['category'] ?? null;
-    $sortBy = $_GET['sort'] ?? 'name_asc';
-    
-    // Get products based on filters
-    if ($searchQuery) {
-        $products = $productModel->search($searchQuery);
-    } elseif ($category) {
-        $products = $productModel->getByCategory($category);
-    } else {
-        $products = $productModel->getAll();
+    public function __construct($pdo) {
+        parent::__construct($pdo);
+        $this->productModel = new Product($pdo);
     }
     
-    // Apply sorting
-    usort($products, function($a, $b) use ($sortBy) {
-        switch ($sortBy) {
-            case 'price_asc':
-                return $a['price'] <=> $b['price'];
-            case 'price_desc':
-                return $b['price'] <=> $a['price'];
-            case 'name_desc':
-                return strcasecmp($b['name'], $a['name']);
-            case 'name_asc':
-            default:
-                return strcasecmp($a['name'], $b['name']);
-        }
-    });
-    
-    // Get all categories for filter menu
-    $categories = $productModel->getAllCategories();
-    
-    $pageTitle = $searchQuery ? 
-        "Search Results for \"" . htmlspecialchars($searchQuery) . "\"" : 
-        ($category ? htmlspecialchars($category) . " Products" : "All Products");
-    
-    require_once __DIR__ . '/../views/products.php';
-}
-
-function handleSearch() {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header('Location: index.php?page=products');
-        exit;
-    }
-    
-    $query = $_POST['search'] ?? '';
-    header('Location: index.php?page=products&search=' . urlencode($query));
-    exit;
-}
-
-function filterProducts() {
-    $category = $_GET['category'] ?? null;
-    $minPrice = $_GET['min_price'] ?? null;
-    $maxPrice = $_GET['max_price'] ?? null;
-    $sortBy = $_GET['sort'] ?? 'name_asc';
-    
-    global $pdo;
-    $productModel = new Product($pdo);
-    
-    // Build query conditions
-    $conditions = [];
-    $params = [];
-    
-    if ($category) {
-        $conditions[] = "category = ?";
-        $params[] = $category;
-    }
-    
-    if ($minPrice !== null) {
-        $conditions[] = "price >= ?";
-        $params[] = $minPrice;
-    }
-    
-    if ($maxPrice !== null) {
-        $conditions[] = "price <= ?";
-        $params[] = $maxPrice;
-    }
-    
-    // Get filtered products
-    $products = $productModel->getFiltered($conditions, $params, $sortBy);
-    
-    // Return JSON response for AJAX requests
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => true,
-        'products' => $products
-    ]);
-}
-
-function showProduct($id) {
-    global $pdo;
-    $productModel = new Product($pdo);
-    $product = $productModel->getById($id);
-    
-    if (!$product) {
-        http_response_code(404);
-        require_once __DIR__ . '/../views/404.php';
-        return;
-    }
-    
-    $pageTitle = $product['name'] . " - The Scent";
-    require_once __DIR__ . '/../views/product_detail.php';
-}
-
-// Admin functions
-function createProduct() {
-    if (!isAdmin()) {
-        http_response_code(403);
-        return;
-    }
-    
-    global $pdo;
-    $productModel = new Product($pdo);
-    
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $data = [
-            'name' => $_POST['name'],
-            'description' => $_POST['description'],
-            'price' => $_POST['price'],
-            'category' => $_POST['category'],
-            'image_url' => $_POST['image_url'],
-            'featured' => isset($_POST['featured']) ? 1 : 0
-        ];
-        
-        if ($productModel->create($data)) {
-            header('Location: index.php?page=products');
-            exit;
+    public function showHomePage() {
+        try {
+            // Check cache for featured products
+            if (!isset($this->cache['featured'])) {
+                $this->cache['featured'] = $this->productModel->getFeatured();
+            }
+            
+            $featuredProducts = $this->cache['featured'];
+            require_once __DIR__ . '/../views/home.php';
+            
+        } catch (Exception $e) {
+            error_log("Error loading home page: " . $e->getMessage());
+            $this->setFlashMessage('Error loading featured products', 'error');
+            $this->redirect('error');
         }
     }
     
-    $pageTitle = "Add New Product - Admin";
-    require_once __DIR__ . '/../views/admin/product_form.php';
-}
-
-function updateProduct($id) {
-    if (!isAdmin()) {
-        http_response_code(403);
-        return;
-    }
-    
-    global $pdo;
-    $productModel = new Product($pdo);
-    $product = $productModel->getById($id);
-    
-    if (!$product) {
-        http_response_code(404);
-        return;
-    }
-    
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $data = [
-            'name' => $_POST['name'],
-            'description' => $_POST['description'],
-            'price' => $_POST['price'],
-            'category' => $_POST['category'],
-            'image_url' => $_POST['image_url'],
-            'featured' => isset($_POST['featured']) ? 1 : 0
-        ];
-        
-        if ($productModel->update($id, $data)) {
-            header('Location: index.php?page=products');
-            exit;
+    public function showProductList() {
+        try {
+            // Validate and sanitize inputs
+            $page = max(1, (int)($this->validateInput($_GET['page'] ?? 1, 'int')));
+            $searchQuery = $this->validateInput($_GET['search'] ?? '', 'string');
+            $category = $this->validateInput($_GET['category'] ?? '', 'string');
+            $sortBy = $this->validateInput($_GET['sort'] ?? 'name_asc', 'string');
+            $minPrice = $this->validateInput($_GET['min_price'] ?? null, 'float');
+            $maxPrice = $this->validateInput($_GET['max_price'] ?? null, 'float');
+            
+            // Calculate pagination
+            $offset = ($page - 1) * $this->itemsPerPage;
+            
+            // Get products based on filters
+            $conditions = [];
+            $params = [];
+            
+            if ($searchQuery) {
+                $conditions[] = "(name LIKE ? OR description LIKE ?)";
+                $params[] = "%{$searchQuery}%";
+                $params[] = "%{$searchQuery}%";
+            }
+            
+            if ($category) {
+                $conditions[] = "category = ?";
+                $params[] = $category;
+            }
+            
+            if ($minPrice !== null) {
+                $conditions[] = "price >= ?";
+                $params[] = $minPrice;
+            }
+            
+            if ($maxPrice !== null) {
+                $conditions[] = "price <= ?";
+                $params[] = $maxPrice;
+            }
+            
+            // Get total count for pagination
+            $totalProducts = $this->productModel->getCount($conditions, $params);
+            $totalPages = ceil($totalProducts / $this->itemsPerPage);
+            
+            // Get paginated products
+            $products = $this->productModel->getFiltered(
+                $conditions,
+                $params,
+                $sortBy,
+                $this->itemsPerPage,
+                $offset
+            );
+            
+            // Get categories for filter menu
+            $categories = $this->productModel->getAllCategories();
+            
+            // Set page title
+            $pageTitle = $searchQuery ? 
+                "Search Results for \"" . htmlspecialchars($searchQuery) . "\"" : 
+                ($category ? htmlspecialchars($category) . " Products" : "All Products");
+            
+            require_once __DIR__ . '/../views/products.php';
+            
+        } catch (Exception $e) {
+            error_log("Error loading product list: " . $e->getMessage());
+            $this->setFlashMessage('Error loading products', 'error');
+            $this->redirect('error');
         }
     }
     
-    $pageTitle = "Edit Product - Admin";
-    require_once __DIR__ . '/../views/admin/product_form.php';
-}
-
-function deleteProduct($id) {
-    if (!isAdmin()) {
-        http_response_code(403);
-        return;
+    public function showProduct($id) {
+        try {
+            $id = $this->validateInput($id, 'int');
+            if (!$id) {
+                throw new Exception('Invalid product ID');
+            }
+            
+            // Check cache
+            $cacheKey = "product_{$id}";
+            if (!isset($this->cache[$cacheKey])) {
+                $this->cache[$cacheKey] = $this->productModel->getById($id);
+            }
+            
+            $product = $this->cache[$cacheKey];
+            
+            if (!$product) {
+                require_once __DIR__ . '/../views/404.php';
+                return;
+            }
+            
+            // Get related products
+            $relatedProducts = $this->productModel->getRelated($product['category'], $id, 4);
+            
+            require_once __DIR__ . '/../views/product_detail.php';
+            
+        } catch (Exception $e) {
+            error_log("Error loading product details: " . $e->getMessage());
+            $this->setFlashMessage('Error loading product details', 'error');
+            $this->redirect('products');
+        }
     }
     
-    global $pdo;
-    $productModel = new Product($pdo);
+    public function createProduct() {
+        try {
+            $this->requireAdmin();
+            $this->validateCSRF();
+            
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $data = [
+                    'name' => $this->validateInput($_POST['name'], 'string'),
+                    'description' => $this->validateInput($_POST['description'], 'string'),
+                    'price' => $this->validateInput($_POST['price'], 'float'),
+                    'category' => $this->validateInput($_POST['category'], 'string'),
+                    'image_url' => $this->validateInput($_POST['image_url'], 'url'),
+                    'stock_quantity' => $this->validateInput($_POST['stock_quantity'] ?? 0, 'int'),
+                    'low_stock_threshold' => $this->validateInput($_POST['low_stock_threshold'] ?? 5, 'int'),
+                    'featured' => isset($_POST['featured']) ? 1 : 0,
+                    'created_by' => $this->getUserId()
+                ];
+                
+                // Validate required fields
+                foreach (['name', 'price', 'category'] as $field) {
+                    if (empty($data[$field])) {
+                        throw new Exception("Missing required field: {$field}");
+                    }
+                }
+                
+                $this->beginTransaction();
+                
+                $productId = $this->productModel->create($data);
+                
+                if ($productId) {
+                    // Clear cache
+                    $this->clearProductCache();
+                    
+                    $this->commit();
+                    $this->setFlashMessage('Product created successfully', 'success');
+                    $this->redirect('admin/products');
+                }
+            }
+            
+            $categories = $this->productModel->getAllCategories();
+            require_once __DIR__ . '/../views/admin/product_form.php';
+            
+        } catch (Exception $e) {
+            $this->rollback();
+            error_log("Error creating product: " . $e->getMessage());
+            $this->setFlashMessage($e->getMessage(), 'error');
+            $this->redirect('admin/products/create');
+        }
+    }
     
-    if ($productModel->delete($id)) {
-        header('Location: index.php?page=products');
-        exit;
+    public function updateProduct($id) {
+        try {
+            $this->requireAdmin();
+            $this->validateCSRF();
+            
+            $id = $this->validateInput($id, 'int');
+            if (!$id) {
+                throw new Exception('Invalid product ID');
+            }
+            
+            $product = $this->productModel->getById($id);
+            if (!$product) {
+                throw new Exception('Product not found');
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $data = [
+                    'name' => $this->validateInput($_POST['name'], 'string'),
+                    'description' => $this->validateInput($_POST['description'], 'string'),
+                    'price' => $this->validateInput($_POST['price'], 'float'),
+                    'category' => $this->validateInput($_POST['category'], 'string'),
+                    'image_url' => $this->validateInput($_POST['image_url'], 'url'),
+                    'stock_quantity' => $this->validateInput($_POST['stock_quantity'] ?? 0, 'int'),
+                    'low_stock_threshold' => $this->validateInput($_POST['low_stock_threshold'] ?? 5, 'int'),
+                    'featured' => isset($_POST['featured']) ? 1 : 0,
+                    'updated_by' => $this->getUserId()
+                ];
+                
+                $this->beginTransaction();
+                
+                if ($this->productModel->update($id, $data)) {
+                    // Clear cache
+                    $this->clearProductCache();
+                    
+                    $this->commit();
+                    $this->setFlashMessage('Product updated successfully', 'success');
+                    $this->redirect('admin/products');
+                }
+            }
+            
+            $categories = $this->productModel->getAllCategories();
+            require_once __DIR__ . '/../views/admin/product_form.php';
+            
+        } catch (Exception $e) {
+            $this->rollback();
+            error_log("Error updating product: " . $e->getMessage());
+            $this->setFlashMessage($e->getMessage(), 'error');
+            $this->redirect("admin/products/edit/{$id}");
+        }
+    }
+    
+    public function deleteProduct($id) {
+        try {
+            $this->requireAdmin();
+            $this->validateCSRF();
+            
+            $id = $this->validateInput($id, 'int');
+            if (!$id) {
+                throw new Exception('Invalid product ID');
+            }
+            
+            $this->beginTransaction();
+            
+            if ($this->productModel->delete($id)) {
+                // Clear cache
+                $this->clearProductCache();
+                
+                $this->commit();
+                $this->setFlashMessage('Product deleted successfully', 'success');
+            }
+            
+            $this->redirect('admin/products');
+            
+        } catch (Exception $e) {
+            $this->rollback();
+            error_log("Error deleting product: " . $e->getMessage());
+            $this->setFlashMessage($e->getMessage(), 'error');
+            $this->redirect('admin/products');
+        }
+    }
+    
+    private function clearProductCache() {
+        $this->cache = [];
+    }
+    
+    public function searchProducts() {
+        try {
+            $query = $this->validateInput($_GET['q'] ?? '', 'string');
+            if (strlen($query) < 2) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Search query too short'
+                ], 400);
+            }
+            
+            $results = $this->productModel->search($query, 10);
+            
+            return $this->jsonResponse([
+                'success' => true,
+                'results' => $results
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Search error: " . $e->getMessage());
+            return $this->jsonResponse([
+                'success' => false,
+                'message' => 'Error performing search'
+            ], 500);
+        }
     }
 }

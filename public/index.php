@@ -1,82 +1,71 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+define('ROOT_PATH', dirname(__DIR__));
+require_once ROOT_PATH . '/config.php';
+require_once ROOT_PATH . '/includes/SecurityMiddleware.php';
+require_once ROOT_PATH . '/includes/ErrorHandler.php';
 
-// Debug output
-var_dump([
-    'DB_HOST' => defined('DB_HOST') ? DB_HOST : 'not defined',
-    'DB_NAME' => defined('DB_NAME') ? DB_NAME : 'not defined',
-    'DB_USER' => defined('DB_USER') ? DB_USER : 'not defined'
-]);
+// Initialize error handling
+ErrorHandler::init();
 
-session_start();
+// Apply security middleware
+SecurityMiddleware::apply();
 
-// Load configuration first
-require_once __DIR__ . '/../config.php';
-
-// Then load database connection
-require_once __DIR__ . '/../includes/db.php';
-
-// Then load other dependencies
-require_once __DIR__ . '/../includes/auth.php';
-
-// Load controllers
-require_once __DIR__ . '/../controllers/ProductController.php';
-require_once __DIR__ . '/../controllers/QuizController.php';
-require_once __DIR__ . '/../controllers/CartController.php';
-require_once __DIR__ . '/../controllers/PaymentController.php';
-require_once __DIR__ . '/../controllers/CouponController.php';
-require_once __DIR__ . '/../controllers/TaxController.php';
-
-// Handle routing
-$page = $_GET['page'] ?? 'home';
-$action = $_GET['action'] ?? 'index';
-$id = $_GET['id'] ?? null;
-
-// Route to appropriate controller/action
 try {
+    // Load core dependencies
+    require_once ROOT_PATH . '/includes/db.php';
+    require_once ROOT_PATH . '/includes/auth.php';
+    
+    // Handle routing
+    $page = SecurityMiddleware::validateInput($_GET['page'] ?? 'home', 'string');
+    $action = SecurityMiddleware::validateInput($_GET['action'] ?? 'index', 'string');
+    
+    // Validate CSRF token for POST requests
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        SecurityMiddleware::validateCSRF();
+    }
+    
+    // Route to appropriate controller/action
     switch ($page) {
         case 'home':
-            showHomePage();
+            require_once ROOT_PATH . '/controllers/ProductController.php';
+            $controller = new ProductController($pdo);
+            $featuredProducts = $controller->getFeaturedProducts();
+            require_once ROOT_PATH . '/views/home.php';
             break;
             
         case 'products':
+            require_once ROOT_PATH . '/controllers/ProductController.php';
+            $controller = new ProductController($pdo);
+            $id = SecurityMiddleware::validateInput($_GET['id'] ?? null, 'int');
+            
             if ($id) {
-                showProduct($id);
+                $product = $controller->getProduct($id);
+                if (!$product) {
+                    http_response_code(404);
+                    require_once ROOT_PATH . '/views/404.php';
+                    break;
+                }
+                require_once ROOT_PATH . '/views/product_detail.php';
             } else {
-                showProductList();
+                $products = $controller->getAllProducts();
+                require_once ROOT_PATH . '/views/products.php';
             }
-            break;
-            
-        case 'quiz':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                handleQuizSubmission();
-            } else {
-                showQuiz();
-            }
-            break;
-            
-        case 'quiz_results':
-            showQuizResults();
             break;
             
         case 'cart':
-            switch ($action) {
-                case 'add':
-                    addToCart();
-                    break;
-                case 'update':
-                    updateCart();
-                    break;
-                case 'remove':
-                    removeFromCart();
-                    break;
-                case 'clear':
-                    clearCart();
-                    break;
-                default:
-                    showCart();
+            require_once ROOT_PATH . '/controllers/CartController.php';
+            $controller = new CartController($pdo);
+            
+            if ($action === 'add') {
+                $productId = SecurityMiddleware::validateInput($_POST['product_id'] ?? null, 'int');
+                $quantity = SecurityMiddleware::validateInput($_POST['quantity'] ?? 1, 'int');
+                $controller->addToCart($productId, $quantity);
+                header('Location: index.php?page=cart');
+                exit;
             }
+            
+            $cartItems = $controller->getCartItems();
+            require_once ROOT_PATH . '/views/cart.php';
             break;
             
         case 'checkout':
@@ -86,215 +75,45 @@ try {
                 exit;
             }
             
-            switch ($action) {
-                case 'apply-coupon':
-                    header('Content-Type: application/json');
-                    $data = json_decode(file_get_contents('php://input'), true);
-                    $couponController = new CouponController($pdo);
-                    $validationResult = $couponController->validateCoupon(
-                        $data['code'],
-                        calculateCartSubtotal(),
-                        getCurrentUser()['id']
-                    );
-                    
-                    if ($validationResult['valid']) {
-                        $_SESSION['coupon'] = [
-                            'id' => $validationResult['coupon']['id'],
-                            'code' => $data['code'],
-                            'discount_amount' => $validationResult['discount_amount']
-                        ];
-                        
-                        // Recalculate totals
-                        $subtotal = calculateCartSubtotal();
-                        $shipping = $subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-                        $total = $subtotal + $shipping - $validationResult['discount_amount'];
-                        
-                        echo json_encode([
-                            'success' => true,
-                            'message' => $validationResult['message'],
-                            'discount_amount' => number_format($validationResult['discount_amount'], 2),
-                            'total' => number_format($total, 2)
-                        ]);
-                    } else {
-                        echo json_encode([
-                            'success' => false,
-                            'message' => $validationResult['message']
-                        ]);
-                    }
-                    break;
-                    
-                case 'calculate-tax':
-                    // ...existing tax calculation code...
-                    break;
-                    
-                default:
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                        processCheckout();
-                    } else {
-                        showCheckout();
-                    }
-            }
-            break;
+            require_once ROOT_PATH . '/controllers/CheckoutController.php';
+            $controller = new CheckoutController($pdo);
             
-        case 'login':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $email = $_POST['email'] ?? '';
-                $password = $_POST['password'] ?? '';
-                
-                if (login($email, $password)) {
-                    $redirect = $_SESSION['redirect_after_login'] ?? 'home';
-                    unset($_SESSION['redirect_after_login']);
-                    header("Location: index.php?page=$redirect");
-                    exit;
-                } else {
-                    $_SESSION['flash_message'] = 'Invalid email or password';
-                    $_SESSION['flash_type'] = 'error';
-                    header('Location: index.php?page=login');
+            if ($action === 'process') {
+                $controller->processCheckout($_POST);
+            } else {
+                $cartItems = (new CartController($pdo))->getCartItems();
+                if (empty($cartItems)) {
+                    header('Location: index.php?page=cart');
                     exit;
                 }
+                require_once ROOT_PATH . '/views/checkout.php';
+            }
+            break;
+            
+        case 'quiz':
+            require_once ROOT_PATH . '/controllers/QuizController.php';
+            $controller = new QuizController($pdo);
+            
+            if ($action === 'submit') {
+                $results = $controller->processQuiz($_POST);
+                require_once ROOT_PATH . '/views/quiz_results.php';
             } else {
-                require_once __DIR__ . '/../views/login.php';
+                $questions = $controller->getQuestions();
+                require_once ROOT_PATH . '/views/quiz.php';
             }
             break;
             
-        case 'register':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $email = $_POST['email'] ?? '';
-                $password = $_POST['password'] ?? '';
-                $name = $_POST['name'] ?? '';
-                
-                if (register($email, $password, $name)) {
-                    login($email, $password);
-                    header('Location: index.php?page=home');
-                    exit;
-                } else {
-                    $_SESSION['flash_message'] = 'Registration failed. Email may already be in use.';
-                    $_SESSION['flash_type'] = 'error';
-                    header('Location: index.php?page=register');
-                    exit;
-                }
-            } else {
-                require_once __DIR__ . '/../views/register.php';
-            }
-            break;
+        // Add other routes as needed...
             
-        case 'logout':
-            logout();
-            header('Location: index.php?page=home');
-            exit;
-            break;
-            
-        case 'payment':
-            $paymentController = new PaymentController();
-            switch ($action) {
-                case 'create-intent':
-                    header('Content-Type: application/json');
-                    $data = json_decode(file_get_contents('php://input'), true);
-                    $result = $paymentController->createPaymentIntent(
-                        $data['amount'],
-                        $data['currency'] ?? 'usd'
-                    );
-                    echo json_encode($result);
-                    break;
-                    
-                case 'webhook':
-                    $result = $paymentController->handleWebhook();
-                    http_response_code($result['success'] ? 200 : 400);
-                    echo json_encode($result);
-                    break;
-                    
-                default:
-                    http_response_code(404);
-                    require_once __DIR__ . '/../views/404.php';
-            }
-            break;
-            
-        case 'admin':
-            if (!isAdmin()) {
-                header('Location: index.php?page=login');
-                exit;
-            }
-            
-            switch ($action) {
-                case 'coupons':
-                    $couponController = new CouponController($pdo);
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                        $result = $couponController->createCoupon($_POST);
-                        header('Location: index.php?page=admin&action=coupons&success=' . ($result ? '1' : '0'));
-                    } else {
-                        $coupons = $couponController->getAllCoupons();
-                        require_once __DIR__ . '/../views/admin/coupons.php';
-                    }
-                    break;
-                    
-                // ...other admin routes...
-            }
-            break;
-            
-        case 'newsletter':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $newsletterController = new NewsletterController($pdo);
-                $email = $_POST['email'] ?? '';
-                $source = $_POST['source'] ?? 'footer';
-                
-                header('Content-Type: application/json');
-                echo json_encode($newsletterController->subscribe($email));
-                exit;
-            }
-            break;
-            
-        case 'unsubscribe':
-            $email = $_GET['email'] ?? '';
-            $token = $_GET['token'] ?? '';
-            
-            if ($email && $token) {
-                $newsletterController = new NewsletterController($pdo);
-                $result = $newsletterController->unsubscribe($email, $token);
-                
-                if ($result['success']) {
-                    $_SESSION['flash_message'] = $result['message'];
-                    $_SESSION['flash_type'] = 'success';
-                } else {
-                    $_SESSION['flash_message'] = $result['message'];
-                    $_SESSION['flash_type'] = 'error';
-                }
-            }
-            
-            header('Location: index.php?page=home');
-            exit;
-            break;
-            
-        case 'forgot-password':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                requestPasswordReset();
-            } else {
-                $pageTitle = "Forgot Password - The Scent";
-                require_once __DIR__ . '/../views/forgot_password.php';
-            }
-            break;
-            
-        case 'reset-password':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                resetPassword();
-            } else {
-                $token = $_GET['token'] ?? '';
-                if (empty($token)) {
-                    header('Location: index.php?page=login');
-                    exit;
-                }
-                $pageTitle = "Reset Password - The Scent";
-                require_once __DIR__ . '/../views/reset_password.php';
-            }
-            break;
-
         default:
-            // 404 Not Found
             http_response_code(404);
-            require_once __DIR__ . '/../views/404.php';
+            require_once ROOT_PATH . '/views/404.php';
+            break;
     }
+} catch (PDOException $e) {
+    error_log("Database error: " . $e->getMessage());
+    throw new Exception('A database error occurred');
 } catch (Exception $e) {
-    // Log error and show error page
-    error_log($e->getMessage());
-    http_response_code(500);
-    require_once __DIR__ . '/../views/error.php';
+    // ErrorHandler will catch and handle the exception
+    throw $e;
 }

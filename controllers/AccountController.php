@@ -1,312 +1,604 @@
 <?php
+require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Order.php';
 require_once __DIR__ . '/../models/Quiz.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../includes/EmailService.php';
+require_once __DIR__ . '/../includes/SecurityMiddleware.php';
 
-class AccountController {
-    private $pdo;
+class AccountController extends BaseController {
     private $emailService;
+    private $userModel;
+    private $orderModel;
+    private $quizModel;
+    private $maxLoginAttempts = 5;
+    private $lockoutDuration = 900; // 15 minutes
+    private $resetTokenExpiry = 3600; // 1 hour
+    private $rateLimit = [
+        'login' => ['attempts' => 5, 'window' => 300], // 5 attempts per 5 minutes
+        'reset' => ['attempts' => 3, 'window' => 3600]  // 3 attempts per hour
+    ];
     
     public function __construct($pdo) {
-        $this->pdo = $pdo;
+        parent::__construct($pdo);
         $this->emailService = new EmailService();
+        $this->userModel = new User($pdo);
+        $this->orderModel = new Order($pdo);
+        $this->quizModel = new Quiz($pdo);
     }
     
     public function showDashboard() {
-        if (!isLoggedIn()) {
-            header('Location: index.php?page=login');
-            exit;
-        }
-        
-        $user = getCurrentUser();
-        
-        // Get recent orders
-        $orderModel = new Order($this->pdo);
-        $recentOrders = $orderModel->getRecentByUserId($user['id'], 5);
-        
-        // Get saved quiz results
-        $quizModel = new Quiz($this->pdo);
-        $quizResults = $quizModel->getResultsByUserId($user['id']);
-        
-        $pageTitle = "My Account - The Scent";
-        require_once __DIR__ . '/../views/account/dashboard.php';
-    }
-
-    public function showOrders() {
-        if (!isLoggedIn()) {
-            header('Location: index.php?page=login');
-            exit;
-        }
-        
-        $user = getCurrentUser();
-        $orderModel = new Order($this->pdo);
-        
-        // Get all orders with pagination
-        $page = $_GET['p'] ?? 1;
-        $perPage = 10;
-        $orders = $orderModel->getAllByUserId($user['id'], $page, $perPage);
-        $totalOrders = $orderModel->getTotalOrdersByUserId($user['id']);
-        $totalPages = ceil($totalOrders / $perPage);
-        
-        $pageTitle = "My Orders - The Scent";
-        require_once __DIR__ . '/../views/account/orders.php';
-    }
-
-    public function showOrderDetails($orderId) {
-        if (!isLoggedIn()) {
-            header('Location: index.php?page=login');
-            exit;
-        }
-        
-        $user = getCurrentUser();
-        $orderModel = new Order($this->pdo);
-        
-        // Get order details
-        $order = $orderModel->getByIdAndUserId($orderId, $user['id']);
-        if (!$order) {
-            http_response_code(404);
-            require_once __DIR__ . '/../views/404.php';
-            return;
-        }
-        
-        $pageTitle = "Order #" . str_pad($order['id'], 6, '0', STR_PAD_LEFT) . " - The Scent";
-        require_once __DIR__ . '/../views/account/order_details.php';
-    }
-
-    public function showProfile() {
-        if (!isLoggedIn()) {
-            header('Location: index.php?page=login');
-            exit;
-        }
-        
-        $user = getCurrentUser();
-        $pageTitle = "My Profile - The Scent";
-        require_once __DIR__ . '/../views/account/profile.php';
-    }
-
-    public function updateProfile() {
-        if (!isLoggedIn()) {
-            header('Location: index.php?page=login');
-            exit;
-        }
-        
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?page=account&section=profile');
-            exit;
-        }
-        
-        $user = getCurrentUser();
-        
-        // Validate input
-        $name = $_POST['name'] ?? '';
-        $email = $_POST['email'] ?? '';
-        $currentPassword = $_POST['current_password'] ?? '';
-        $newPassword = $_POST['new_password'] ?? '';
-        
-        if (empty($name) || empty($email)) {
-            $_SESSION['flash_message'] = 'Name and email are required.';
-            $_SESSION['flash_type'] = 'error';
-            header('Location: index.php?page=account&section=profile');
-            exit;
-        }
-        
-        // Check if email is changing
-        $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
-        $stmt->execute([$email, $user['id']]);
-        if ($stmt->fetch()) {
-            $_SESSION['flash_message'] = 'Email already in use.';
-            $_SESSION['flash_type'] = 'error';
-            header('Location: index.php?page=account&section=profile');
-            exit;
-        }
-        
-        // Update basic info
-        $stmt = $this->pdo->prepare("UPDATE users SET name = ?, email = ? WHERE id = ?");
-        $stmt->execute([$name, $email, $user['id']]]);
-        
-        // Update password if provided
-        if ($newPassword) {
-            if (!password_verify($currentPassword, $user['password'])) {
-                $_SESSION['flash_message'] = 'Current password is incorrect.';
-                $_SESSION['flash_type'] = 'error';
-                header('Location: index.php?page=account&section=profile');
-                exit;
+        try {
+            $this->requireLogin();
+            $userId = $this->getUserId();
+            
+            // Get recent orders with transaction
+            $this->beginTransaction();
+            
+            try {
+                $recentOrders = $this->orderModel->getRecentByUserId($userId, 5);
+                $quizResults = $this->quizModel->getResultsByUserId($userId);
+                
+                $this->commit();
+                
+                return $this->renderView('account/dashboard', [
+                    'pageTitle' => 'My Account - The Scent',
+                    'recentOrders' => $recentOrders,
+                    'quizResults' => $quizResults
+                ]);
+                
+            } catch (Exception $e) {
+                $this->rollback();
+                throw $e;
             }
             
-            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-            $stmt = $this->pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
-            $stmt->execute([$hashedPassword, $user['id']]);
+        } catch (Exception $e) {
+            error_log("Dashboard error: " . $e->getMessage());
+            $this->setFlashMessage('Error loading dashboard', 'error');
+            return $this->redirect('error');
         }
-        
-        // Update session
-        $_SESSION['user'] = array_merge($user, ['name' => $name, 'email' => $email]);
-        
-        $_SESSION['flash_message'] = 'Profile updated successfully.';
-        $_SESSION['flash_type'] = 'success';
-        header('Location: index.php?page=account&section=profile');
-        exit;
     }
-
-    public function showQuizHistory() {
-        if (!isLoggedIn()) {
-            header('Location: index.php?page=login');
-            exit;
+    
+    public function showOrders() {
+        try {
+            $this->requireLogin();
+            $userId = $this->getUserId();
+            
+            // Validate and sanitize pagination params
+            $page = max(1, (int)$this->validateInput($_GET['p'] ?? 1, 'int'));
+            $perPage = 10;
+            
+            // Get paginated orders
+            $orders = $this->orderModel->getAllByUserId($userId, $page, $perPage);
+            $totalOrders = $this->orderModel->getTotalOrdersByUserId($userId);
+            $totalPages = ceil($totalOrders / $perPage);
+            
+            return $this->renderView('account/orders', [
+                'pageTitle' => 'My Orders - The Scent',
+                'orders' => $orders,
+                'currentPage' => $page,
+                'totalPages' => $totalPages
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Orders error: " . $e->getMessage());
+            $this->setFlashMessage('Error loading orders', 'error');
+            return $this->redirect('error');
         }
-        
-        $user = getCurrentUser();
-        $quizModel = new Quiz($this->pdo);
-        $quizResults = $quizModel->getResultsByUserId($user['id']);
-        
-        $pageTitle = "Quiz History - The Scent";
-        require_once __DIR__ . '/../views/account/quiz_history.php';
     }
-
+    
+    public function showOrderDetails($orderId) {
+        try {
+            $this->requireLogin();
+            $userId = $this->getUserId();
+            
+            // Validate input
+            $orderId = $this->validateInput($orderId, 'int');
+            if (!$orderId) {
+                throw new Exception('Invalid order ID');
+            }
+            
+            // Get order with auth check
+            $order = $this->orderModel->getByIdAndUserId($orderId, $userId);
+            if (!$order) {
+                return $this->renderView('404');
+            }
+            
+            return $this->renderView('account/order_details', [
+                'pageTitle' => "Order #" . str_pad($order['id'], 6, '0', STR_PAD_LEFT) . " - The Scent",
+                'order' => $order
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Order details error: " . $e->getMessage());
+            $this->setFlashMessage('Error loading order details', 'error');
+            return $this->redirect('account/orders');
+        }
+    }
+    
+    public function showProfile() {
+        try {
+            $this->requireLogin();
+            $user = $this->getCurrentUser();
+            
+            return $this->renderView('account/profile', [
+                'pageTitle' => 'My Profile - The Scent',
+                'user' => $user
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Profile error: " . $e->getMessage());
+            $this->setFlashMessage('Error loading profile', 'error');
+            return $this->redirect('error');
+        }
+    }
+    
+    public function updateProfile() {
+        try {
+            $this->requireLogin();
+            $this->validateCSRF();
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                return $this->redirect('account/profile');
+            }
+            
+            $userId = $this->getUserId();
+            
+            // Validate inputs
+            $name = $this->validateInput($_POST['name'] ?? '', 'string');
+            $email = $this->validateInput($_POST['email'] ?? '', 'email');
+            $currentPassword = $_POST['current_password'] ?? '';
+            $newPassword = $_POST['new_password'] ?? '';
+            
+            if (empty($name) || empty($email)) {
+                throw new Exception('Name and email are required.');
+            }
+            
+            $this->beginTransaction();
+            
+            try {
+                // Check if email is taken by another user
+                if ($this->userModel->isEmailTakenByOthers($email, $userId)) {
+                    throw new Exception('Email already in use.');
+                }
+                
+                // Update basic info
+                $this->userModel->updateBasicInfo($userId, $name, $email);
+                
+                // Update password if provided
+                if ($newPassword) {
+                    if (!$this->userModel->verifyPassword($userId, $currentPassword)) {
+                        throw new Exception('Current password is incorrect.');
+                    }
+                    
+                    // Validate password strength
+                    if (!$this->isPasswordStrong($newPassword)) {
+                        throw new Exception('Password must be at least 8 characters and contain uppercase, number, and special character.');
+                    }
+                    
+                    $this->userModel->updatePassword($userId, $newPassword);
+                }
+                
+                $this->commit();
+                
+                // Update session
+                $_SESSION['user'] = array_merge(
+                    $_SESSION['user'], 
+                    ['name' => $name, 'email' => $email]
+                );
+                
+                $this->setFlashMessage('Profile updated successfully.', 'success');
+                
+                // Log the profile update
+                $this->logAuditTrail('profile_update', $userId);
+                
+                return $this->redirect('account/profile');
+                
+            } catch (Exception $e) {
+                $this->rollback();
+                throw $e;
+            }
+            
+        } catch (Exception $e) {
+            error_log("Profile update error: " . $e->getMessage());
+            $this->setFlashMessage($e->getMessage(), 'error');
+            return $this->redirect('account/profile');
+        }
+    }
+    
     public function requestPasswordReset() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return;
-        }
-
-        $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $_SESSION['flash_message'] = 'Please enter a valid email address.';
-            $_SESSION['flash_type'] = 'error';
-            header('Location: index.php?page=forgot_password');
-            exit;
-        }
-
         try {
-            // Generate a secure random token
-            $token = bin2hex(random_bytes(32));
-            $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
-
-            $stmt = $this->pdo->prepare('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE email = ?');
-            $stmt->execute([$token, $expiry, $email]);
-
-            if ($stmt->rowCount() > 0) {
-                // Get user details for the email
-                $stmt = $this->pdo->prepare('SELECT id, name, email FROM users WHERE email = ?');
-                $stmt->execute([$email]);
-                $user = $stmt->fetch();
-
-                $resetLink = "https://" . $_SERVER['HTTP_HOST'] . "/index.php?page=reset_password&token=" . urlencode($token);
-
-                // Send password reset email
-                $this->emailService->sendPasswordReset($user, $token);
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                return;
             }
-
-            // Always show the same message to prevent email enumeration
-            $_SESSION['flash_message'] = 'If an account exists with that email, we have sent password reset instructions.';
-            $_SESSION['flash_type'] = 'success';
+            
+            $this->validateCSRF();
+            
+            // Rate limit password reset requests
+            if ($this->isRateLimited('password_reset', 5, 3600)) { // 5 attempts per hour
+                throw new Exception('Too many password reset attempts. Please try again later.');
+            }
+            
+            $email = $this->validateInput($_POST['email'] ?? '', 'email');
+            if (!$email) {
+                throw new Exception('Please enter a valid email address.');
+            }
+            
+            $this->beginTransaction();
+            
+            try {
+                // Generate a secure random token
+                $token = bin2hex(random_bytes(32));
+                $expiry = date('Y-m-d H:i:s', time() + $this->resetTokenExpiry);
+                
+                // Update user record with reset token
+                $updated = $this->userModel->setResetToken($email, $token, $expiry);
+                
+                if ($updated) {
+                    // Get user details for the email
+                    $user = $this->userModel->getByEmail($email);
+                    
+                    $resetLink = $this->getResetPasswordUrl($token);
+                    
+                    // Send password reset email
+                    $this->emailService->sendPasswordReset($user, $token, $resetLink);
+                    
+                    // Log the password reset request
+                    $this->logAuditTrail('password_reset_request', $user['id']);
+                }
+                
+                $this->commit();
+                
+                // Always show same message to prevent email enumeration
+                $this->setFlashMessage('If an account exists with that email, we have sent password reset instructions.', 'success');
+                
+            } catch (Exception $e) {
+                $this->rollback();
+                throw $e;
+            }
+            
         } catch (Exception $e) {
-            error_log("Password reset error: " . $e->getMessage());
-            $_SESSION['flash_message'] = 'An error occurred. Please try again later.';
-            $_SESSION['flash_type'] = 'error';
+            error_log("Password reset request error: " . $e->getMessage());
+            $this->setFlashMessage('An error occurred. Please try again later.', 'error');
         }
         
-        header('Location: index.php?page=forgot_password');
-        exit;
+        return $this->redirect('forgot_password');
     }
-
+    
     public function resetPassword() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return;
-        }
-
-        $token = filter_input(INPUT_POST, 'token', FILTER_SANITIZE_STRING);
-        $password = $_POST['password'] ?? '';
-        $confirmPassword = $_POST['confirm_password'] ?? '';
-
-        if (!$token) {
-            $_SESSION['flash_message'] = 'Invalid password reset token.';
-            $_SESSION['flash_type'] = 'error';
-            header('Location: index.php?page=login');
-            exit;
-        }
-
-        if ($password !== $confirmPassword) {
-            $_SESSION['flash_message'] = 'Passwords do not match.';
-            $_SESSION['flash_type'] = 'error';
-            header("Location: index.php?page=reset_password&token=" . urlencode($token));
-            exit;
-        }
-
-        // Validate password strength
-        if (strlen($password) < 8 || 
-            !preg_match('/[A-Z]/', $password) || 
-            !preg_match('/[0-9]/', $password) || 
-            !preg_match('/[^A-Za-z0-9]/', $password)) {
-            $_SESSION['flash_message'] = 'Password must be at least 8 characters and contain uppercase, number, and special character.';
-            $_SESSION['flash_type'] = 'error';
-            header("Location: index.php?page=reset_password&token=" . urlencode($token));
-            exit;
-        }
-
         try {
-            $this->pdo->beginTransaction();
-
-            // Check if token exists and hasn't expired
-            $stmt = $this->pdo->prepare('SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()');
-            $stmt->execute([$token]);
-            $user = $stmt->fetch();
-
-            if (!$user) {
-                throw new Exception('This password reset link has expired or is invalid.');
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                return;
             }
-
-            // Update password and clear reset token
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $this->pdo->prepare('UPDATE users SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?');
-            $stmt->execute([$hashedPassword, $user['id']]);
-
-            $this->pdo->commit();
-
-            $_SESSION['flash_message'] = 'Your password has been successfully reset. Please log in with your new password.';
-            $_SESSION['flash_type'] = 'success';
-            header('Location: index.php?page=login');
+            
+            $this->validateCSRF();
+            
+            // Validate inputs
+            $token = $this->validateInput($_POST['token'] ?? '', 'string');
+            $password = $_POST['password'] ?? '';
+            $confirmPassword = $_POST['confirm_password'] ?? '';
+            
+            if (!$token) {
+                throw new Exception('Invalid password reset token.');
+            }
+            
+            if ($password !== $confirmPassword) {
+                throw new Exception('Passwords do not match.');
+            }
+            
+            if (!$this->isPasswordStrong($password)) {
+                throw new Exception('Password must be at least 8 characters and contain uppercase, number, and special character.');
+            }
+            
+            $this->beginTransaction();
+            
+            try {
+                // Verify token and get user
+                $user = $this->userModel->getUserByValidResetToken($token);
+                if (!$user) {
+                    throw new Exception('This password reset link has expired or is invalid.');
+                }
+                
+                // Update password and clear reset token
+                $this->userModel->resetPassword($user['id'], $password);
+                
+                // Log the password reset
+                $this->logAuditTrail('password_reset_complete', $user['id']);
+                
+                $this->commit();
+                
+                $this->setFlashMessage('Your password has been successfully reset. Please log in with your new password.', 'success');
+                return $this->redirect('login');
+                
+            } catch (Exception $e) {
+                $this->rollback();
+                throw $e;
+            }
+            
         } catch (Exception $e) {
-            $this->pdo->rollBack();
             error_log("Password reset error: " . $e->getMessage());
-            $_SESSION['flash_message'] = $e->getMessage();
-            $_SESSION['flash_type'] = 'error';
-            header("Location: index.php?page=reset_password&token=" . urlencode($token));
+            $this->setFlashMessage($e->getMessage(), 'error');
+            return $this->redirect("reset_password?token=" . urlencode($token));
         }
-        exit;
+    }
+    
+    public function updateNewsletterPreferences() {
+        try {
+            $this->requireLogin();
+            $this->validateCSRF();
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                return $this->redirect('account/profile');
+            }
+            
+            $userId = $this->getUserId();
+            $newsletter = filter_var($_POST['newsletter'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            
+            $this->beginTransaction();
+            
+            try {
+                $this->userModel->updateNewsletterPreference($userId, $newsletter);
+                
+                // Log the preference update
+                $this->logAuditTrail('newsletter_preference_update', $userId);
+                
+                $this->commit();
+                
+                $this->setFlashMessage('Newsletter preferences updated successfully.', 'success');
+                
+            } catch (Exception $e) {
+                $this->rollback();
+                throw $e;
+            }
+            
+        } catch (Exception $e) {
+            error_log("Newsletter preference update error: " . $e->getMessage());
+            $this->setFlashMessage('Failed to update newsletter preferences.', 'error');
+        }
+        
+        return $this->redirect('account/profile');
+    }
+    
+    private function isPasswordStrong($password) {
+        return strlen($password) >= 8 && 
+               preg_match('/[A-Z]/', $password) && 
+               preg_match('/[0-9]/', $password) && 
+               preg_match('/[^A-Za-z0-9]/', $password);
+    }
+    
+    private function getResetPasswordUrl($token) {
+        return "https://" . $_SERVER['HTTP_HOST'] . "/index.php?page=reset_password&token=" . urlencode($token);
+    }
+    
+    private function logAuditTrail($action, $userId) {
+        try {
+            $data = [
+                'user_id' => $userId,
+                'action' => $action,
+                'ip_address' => $_SERVER['REMOTE_ADDR'],
+                'user_agent' => $_SERVER['HTTP_USER_AGENT']
+            ];
+            
+            $this->db->insert('audit_trail', $data);
+        } catch (Exception $e) {
+            error_log("Audit trail error: " . $e->getMessage());
+        }
     }
 
-    public function updateNewsletterPreferences() {
-        if (!isLoggedIn()) {
-            header('Location: index.php?page=login');
-            exit;
+    public function login() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                // Validate CSRF token
+                $this->validateCSRFToken();
+                
+                // Rate limit check
+                $this->checkRateLimit('login', $_SERVER['REMOTE_ADDR']);
+                
+                // Validate input
+                $email = SecurityMiddleware::validateInput($_POST['email'] ?? '', 'email');
+                $password = SecurityMiddleware::validateInput($_POST['password'] ?? '', 'string', ['min' => 8]);
+                
+                if (!$email || !$password) {
+                    throw new Exception('Invalid credentials');
+                }
+                
+                // Attempt login
+                $user = $this->userModel->findByEmail($email);
+                if (!$user || !password_verify($password, $user['password'])) {
+                    $this->logFailedLogin($email, $_SERVER['REMOTE_ADDR']);
+                    throw new Exception('Invalid credentials');
+                }
+                
+                // Success - create session
+                $this->createSecureSession($user);
+                
+                // Clear failed attempts
+                $this->clearRateLimit('login', $_SERVER['REMOTE_ADDR']);
+                
+                // Audit log
+                $this->logAuditEvent('login_success', $user['id']);
+                
+                return $this->jsonResponse(['success' => true, 'redirect' => '/dashboard']);
+                
+            } catch (Exception $e) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ], 401);
+            }
         }
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?page=account&section=profile');
-            exit;
-        }
-
-        $emailMarketing = isset($_POST['email_marketing']);
-        $emailOrders = isset($_POST['email_orders']);
-        $emailNewsletter = isset($_POST['email_newsletter']);
-
-        $stmt = $this->pdo->prepare("
-            UPDATE users 
-            SET email_marketing = ?,
-                email_orders = ?,
-                email_newsletter = ?
-            WHERE id = ?
-        ");
         
-        $stmt->execute([
-            $emailMarketing ? 1 : 0,
-            $emailOrders ? 1 : 0,
-            $emailNewsletter ? 1 : 0,
-            getCurrentUser()['id']
+        return $this->render('login', [
+            'csrfToken' => $this->generateCSRFToken()
         ]);
-
-        $_SESSION['flash_message'] = 'Communication preferences updated successfully.';
-        $_SESSION['flash_type'] = 'success';
-        header('Location: index.php?page=account&section=profile');
-        exit;
+    }
+    
+    public function register() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $this->validateCSRFToken();
+                
+                // Validate input
+                $email = SecurityMiddleware::validateInput($_POST['email'] ?? '', 'email');
+                $password = SecurityMiddleware::validateInput($_POST['password'] ?? '', 'password');
+                $name = SecurityMiddleware::validateInput($_POST['name'] ?? '', 'string', ['min' => 2, 'max' => 100]);
+                
+                if (!$email || !$password || !$name) {
+                    throw new Exception('Invalid input');
+                }
+                
+                // Check if email exists
+                if ($this->userModel->findByEmail($email)) {
+                    throw new Exception('Email already registered');
+                }
+                
+                // Create user
+                $userId = $this->userModel->create([
+                    'email' => $email,
+                    'password' => password_hash($password, PASSWORD_DEFAULT),
+                    'name' => $name
+                ]);
+                
+                // Send welcome email
+                $this->sendWelcomeEmail($email, $name);
+                
+                // Audit log
+                $this->logAuditEvent('user_registered', $userId);
+                
+                return $this->jsonResponse(['success' => true, 'redirect' => '/login']);
+                
+            } catch (Exception $e) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ], 400);
+            }
+        }
+        
+        return $this->render('register', [
+            'csrfToken' => $this->generateCSRFToken()
+        ]);
+    }
+    
+    public function resetPassword() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $this->validateCSRFToken();
+                
+                // Rate limit check
+                $this->checkRateLimit('reset', $_SERVER['REMOTE_ADDR']);
+                
+                $email = SecurityMiddleware::validateInput($_POST['email'] ?? '', 'email');
+                if (!$email) {
+                    throw new Exception('Invalid email');
+                }
+                
+                $user = $this->userModel->findByEmail($email);
+                if (!$user) {
+                    // Don't reveal if email exists
+                    return $this->jsonResponse(['success' => true]);
+                }
+                
+                // Generate secure token
+                $token = bin2hex(random_bytes(32));
+                $expires = time() + 3600; // 1 hour
+                
+                // Store reset token
+                $this->userModel->storeResetToken($user['id'], $token, $expires);
+                
+                // Send reset email
+                $this->sendPasswordResetEmail($email, $token);
+                
+                // Audit log
+                $this->logAuditEvent('password_reset_requested', $user['id']);
+                
+                return $this->jsonResponse(['success' => true]);
+                
+            } catch (Exception $e) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'error' => 'Unable to process request'
+                ], 400);
+            }
+        }
+        
+        return $this->render('reset_password', [
+            'csrfToken' => $this->generateCSRFToken()
+        ]);
+    }
+    
+    public function logout() {
+        if (isset($_SESSION['user'])) {
+            $userId = $_SESSION['user']['id'];
+            
+            // Destroy session
+            session_destroy();
+            
+            // Generate new session id
+            session_start();
+            session_regenerate_id(true);
+            
+            // Audit log
+            $this->logAuditEvent('logout', $userId);
+        }
+        
+        return $this->redirect('/login');
+    }
+    
+    private function createSecureSession($user) {
+        // Start fresh session
+        if (session_status() !== PHP_SESSION_NONE) {
+            session_destroy();
+        }
+        session_start();
+        
+        // Regenerate session ID
+        session_regenerate_id(true);
+        
+        // Set session data
+        $_SESSION['user'] = [
+            'id' => $user['id'],
+            'email' => $user['email'],
+            'name' => $user['name'],
+            'role' => $user['role'],
+            'created_at' => time()
+        ];
+        
+        // Set additional security headers
+        header('X-Frame-Options: DENY');
+        header('X-XSS-Protection: 1; mode=block');
+        header('X-Content-Type-Options: nosniff');
+    }
+    
+    private function logFailedLogin($email, $ip) {
+        // Implementation for logging failed login attempts
+        // This could write to a database or log file
+    }
+    
+    private function checkRateLimit($action, $ip) {
+        // Check if IP is blacklisted
+        if (SecurityMiddleware::isBlacklisted($ip)) {
+            throw new Exception('Access denied');
+        }
+        
+        $attempts = $this->getRateLimitAttempts($action, $ip);
+        if ($attempts >= $this->rateLimit[$action]['attempts']) {
+            throw new Exception('Too many attempts. Please try again later.');
+        }
+    }
+    
+    private function getRateLimitAttempts($action, $ip) {
+        // Implementation to get number of attempts
+        // This would typically use Redis or similar
+        return 0; // Placeholder
+    }
+    
+    private function clearRateLimit($action, $ip) {
+        // Implementation to clear rate limit attempts
+    }
+    
+    private function logAuditEvent($action, $userId) {
+        // Implementation for audit logging
+        // This would typically write to a separate audit log table
     }
 }

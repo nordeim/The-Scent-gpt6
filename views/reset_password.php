@@ -82,17 +82,34 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('resetPasswordForm');
     const password = document.getElementById('password');
     const confirmPassword = document.getElementById('password_confirm');
     const submitButton = document.getElementById('submitButton');
+    
     const requirements = {
-        length: { regex: /.{8,}/, element: document.getElementById('length') },
-        uppercase: { regex: /[A-Z]/, element: document.getElementById('uppercase') },
-        lowercase: { regex: /[a-z]/, element: document.getElementById('lowercase') },
-        number: { regex: /[0-9]/, element: document.getElementById('number') },
-        special: { regex: /[@$!%*?&]/, element: document.getElementById('special') },
-        match: { element: document.getElementById('match') }
+        length: {
+            regex: /.{8,}/,
+            element: document.getElementById('length')
+        },
+        uppercase: {
+            regex: /[A-Z]/,
+            element: document.getElementById('uppercase')
+        },
+        lowercase: {
+            regex: /[a-z]/,
+            element: document.getElementById('lowercase')
+        },
+        number: {
+            regex: /[0-9]/,
+            element: document.getElementById('number')
+        },
+        special: {
+            regex: /[@$!%*?&]/,
+            element: document.getElementById('special')
+        },
+        match: {
+            element: document.getElementById('match')
+        }
     };
 
     function validatePassword() {
