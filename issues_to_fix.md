@@ -2,7 +2,11 @@ Now carefully review all the project files under the controllers and views folde
 
 remember to think deeply and systematically via long chain of thoughts to thoroughly and carefully explore the best possible implementation option to implement your proposed changes, then come up with a detailed action plan before executing according to the plan thus created step-by-step cautiously.
 
-Now, carefully and systematically explore the controllers directory to ensure consistency:
+please carefully the current project files to check why the main landing page is only left the header and not consistent with the design specifications in README.md and the attached task and sample documents?
+
+$ curl -Lk https://the-scent.com/ -o current_landing_page.html
+
+Now, carefully and systematically explore the controllers and views directories to ensure consistency with public/index.php and meet the UI layout specified in README.md and the design documents:
 
 1. Need to verify all referenced controllers exist:
 - ProductController.php
