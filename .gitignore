@@ -28,7 +28,6 @@
 # Logs and databases #
 ######################
 *.log
-*.sql
 *.sqlite
 *.db
 *.db-journal
@@ -107,6 +106,8 @@ coverage/
 .nyc_output/
 public/videos/
 public/images/
+apache_logs/
+logs/
 
 # Test results #
 ################

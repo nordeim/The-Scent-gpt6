@@ -1,6 +1,9 @@
 <?php
+echo '<!-- DEBUG: index.php loaded -->';
 define('ROOT_PATH', dirname(__DIR__));
 require_once ROOT_PATH . '/config.php';
+require_once ROOT_PATH . '/includes/db.php';
+require_once ROOT_PATH . '/includes/auth.php';
 require_once ROOT_PATH . '/includes/SecurityMiddleware.php';
 require_once ROOT_PATH . '/includes/ErrorHandler.php';
 
@@ -12,8 +15,6 @@ SecurityMiddleware::apply();
 
 try {
     // Load core dependencies
-    require_once ROOT_PATH . '/includes/db.php';
-    require_once ROOT_PATH . '/includes/auth.php';
     require_once ROOT_PATH . '/controllers/ProductController.php';
     
     // Handle routing

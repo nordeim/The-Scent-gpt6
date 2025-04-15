@@ -76,16 +76,9 @@ define('SECURITY_SETTINGS', [
 // Database Configuration
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'the_scent');
-define('DB_USER', 'root');
-define('DB_PASS', 'Admin1234');
+define('DB_USER', 'scent_user');
+define('DB_PASS', 'StrongPassword123');
 define('BASE_URL', '/');
-
-// Ensure all database constants are properly escaped
-foreach (['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS'] as $const) {
-    if (defined($const)) {
-        define($const, trim(constant($const)));
-    }
-}
 
 // Stripe Configuration
 define('STRIPE_PUBLIC_KEY', 'pk_test_your_stripe_public_key');

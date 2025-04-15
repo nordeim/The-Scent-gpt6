@@ -1,5 +1,6 @@
 <?php 
 require_once __DIR__ . '/layout/header.php';
+echo '<!-- DEBUG: home.php loaded -->';
 $delay = 0; // Initialize delay counter for animations
 ?>
 
@@ -40,7 +41,7 @@ $delay = 0; // Initialize delay counter for animations
                                 <?= htmlspecialchars($product['display_badge']) ?>
                             </span>
                         <?php endif; ?>
-                        <img src="<?= htmlspecialchars($product['image_url']) ?>" 
+                        <img src="<?= htmlspecialchars($product['image'] ?? '/public/images/placeholder.jpg') ?>" 
                              alt="<?= htmlspecialchars($product['name']) ?>"
                              class="w-full h-64 object-cover"
                              loading="lazy">

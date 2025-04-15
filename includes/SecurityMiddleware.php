@@ -14,17 +14,13 @@ class SecurityMiddleware {
         header("Content-Security-Policy: default-src 'self'; script-src 'self' https://js.stripe.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src https://js.stripe.com; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com");
         
         // Set secure cookie parameters
-        $cookieParams = session_get_cookie_params();
-        session_set_cookie_params([
-            'lifetime' => $cookieParams['lifetime'],
-            'path' => '/',
-            'domain' => $_SERVER['HTTP_HOST'],
-            'secure' => true,
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-        
         if (session_status() === PHP_SESSION_NONE) {
+            session_set_cookie_params([
+                'lifetime' => 3600,
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
             session_start();
         }
         

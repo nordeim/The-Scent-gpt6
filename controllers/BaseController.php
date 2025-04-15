@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/EmailService.php';
 
 abstract class BaseController {
     protected $db;
@@ -6,8 +7,8 @@ abstract class BaseController {
     protected $emailService;
     protected $responseHeaders = [];
     
-    public function __construct() {
-        $this->db = new PDO(/* ...existing connection code... */);
+    public function __construct($pdo) {
+        $this->db = $pdo;
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->securityMiddleware = new SecurityMiddleware();
         $this->emailService = new EmailService();
