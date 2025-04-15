@@ -3,19 +3,22 @@ require_once __DIR__ . '/layout/header.php';
 $delay = 0; // Initialize delay counter for animations
 ?>
 
-<!-- Hero Section -->
-<section class="hero-section">
+<!-- Hero Section with Video Background -->
+<section class="hero-section relative h-[80vh] flex items-center justify-center overflow-hidden">
+    <!-- Video Background -->
+    <video class="absolute inset-0 w-full h-full object-cover z-0" autoplay muted loop playsinline poster="/public/images/scent5.jpg">
+        <source src="/public/videos/hero.mp4" type="video/mp4">
+        <img src="/public/images/scent5.jpg" alt="Calming Nature" class="w-full h-full object-cover" />
+    </video>
     <!-- Particles Background -->
-    <div id="particles-js" class="absolute inset-0 z-0"></div>
-    
+    <div id="particles-js" class="absolute inset-0 z-10"></div>
     <!-- Gradient Overlay -->
-    <div class="absolute inset-0 bg-gradient-to-br from-primary/50 to-primary-dark/50 z-10"></div>
-    
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/60 to-primary-dark/60 z-20"></div>
     <!-- Hero Content -->
-    <div class="container relative z-20 h-full flex items-center justify-center text-center text-white">
+    <div class="container relative z-30 h-full flex items-center justify-center text-center text-white">
         <div data-aos="fade-up" data-aos-duration="1000">
-            <h1 class="text-5xl md:text-6xl font-bold mb-6">Discover Natural Wellness</h1>
-            <p class="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">Experience premium, natural aromatherapy crafted to enhance well-being and restore balance.</p>
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 font-heading">Find Your Moment of Calm</h1>
+            <p class="text-xl md:text-2xl mb-8 max-w-2xl mx-auto font-body">Experience premium, natural aromatherapy crafted to enhance well-being and restore balance.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="index.php?page=quiz" class="btn-primary">Find Your Perfect Scent</a>
                 <a href="index.php?page=products" class="btn-secondary">Shop Collection</a>
@@ -113,13 +116,40 @@ $delay = 0; // Initialize delay counter for animations
     </div>
 </section>
 
-<!-- Quiz Section -->
-<section class="quiz-section">
+<!-- Quiz/Finder Section -->
+<section class="quiz-section py-20 bg-light">
     <div class="container">
-        <div class="quiz-content" data-aos="fade-up">
-            <h2>Find Your Perfect Scent</h2>
-            <p class="mb-8">Take our personalized quiz to discover aromatherapy products tailored to your needs.</p>
-            <a href="index.php?page=quiz" class="btn-white">Take the Quiz</a>
+        <h2 class="text-3xl font-bold text-center mb-8" data-aos="fade-up">Discover Your Perfect Scent</h2>
+        <p class="text-center mb-12 text-lg" data-aos="fade-up" data-aos-delay="100">Tailor your aromatherapy experience to your mood and needs.</p>
+        <div class="grid md:grid-cols-5 gap-6 mb-8">
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="0">
+                <i class="fas fa-leaf text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Relaxation</h3>
+                <p class="text-sm text-gray-600 text-center">Calming scents to help you unwind.</p>
+            </div>
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="100">
+                <i class="fas fa-bolt text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Energy</h3>
+                <p class="text-sm text-gray-600 text-center">Invigorating aromas to uplift your day.</p>
+            </div>
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="200">
+                <i class="fas fa-brain text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Focus</h3>
+                <p class="text-sm text-gray-600 text-center">Clarifying blends for a clear mind.</p>
+            </div>
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="300">
+                <i class="fas fa-moon text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Sleep</h3>
+                <p class="text-sm text-gray-600 text-center">Soothing scents for a peaceful night's rest.</p>
+            </div>
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="400">
+                <i class="fas fa-balance-scale text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Balance</h3>
+                <p class="text-sm text-gray-600 text-center">Harmonious aromas to center you.</p>
+            </div>
+        </div>
+        <div class="text-center" data-aos="fade-up" data-aos-delay="500">
+            <a href="index.php?page=quiz" class="btn-primary">Take the Full Scent Quiz</a>
         </div>
     </div>
 </section>
@@ -135,6 +165,30 @@ $delay = 0; // Initialize delay counter for animations
                 <input type="email" name="email" placeholder="Enter your email" required>
                 <button type="submit" class="btn-primary">Subscribe</button>
             </form>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="py-20 bg-white">
+    <div class="container">
+        <h2 class="text-3xl font-bold text-center mb-12" data-aos="fade-up">What Our Community Says</h2>
+        <div class="grid md:grid-cols-3 gap-8 testimonial-grid">
+            <div class="testimonial-card bg-light p-8 rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="0">
+                <p class="mb-4 italic">"The Lavender Essential Oil transformed my bedtime routine—its calming aroma truly helps me unwind."</p>
+                <span class="block font-semibold mb-2">- Sarah L., Los Angeles</span>
+                <div class="text-accent text-lg">★★★★★</div>
+            </div>
+            <div class="testimonial-card bg-light p-8 rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="100">
+                <p class="mb-4 italic">"The Focus Blend oil improved my concentration at home without overwhelming my senses."</p>
+                <span class="block font-semibold mb-2">- Michael T., Chicago</span>
+                <div class="text-accent text-lg">★★★★★</div>
+            </div>
+            <div class="testimonial-card bg-light p-8 rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="200">
+                <p class="mb-4 italic">"Handcrafted soaps that feel divine and truly nourish sensitive skin. A luxurious experience."</p>
+                <span class="block font-semibold mb-2">- Emma R., Seattle</span>
+                <div class="text-accent text-lg">★★★★★</div>
+            </div>
         </div>
     </div>
 </section>
