@@ -1,0 +1,572 @@
+# views/home.php  
+```code
+<?php 
+require_once __DIR__ . '/layout/header.php';
+echo '<!-- DEBUG: home.php loaded -->';
+$delay = 0; // Initialize delay counter for animations
+?>
+
+<!-- Hero Section with Video Background -->
+<section class="hero-section relative min-h-screen flex items-center justify-center overflow-hidden">
+    <div id="particles-js" class="absolute inset-0 z-0"></div>
+    <video class="absolute inset-0 w-full h-full object-cover z-[-1]" autoplay muted loop playsinline poster="/public/images/scent5.jpg">
+        <source src="/public/videos/hero.mp4" type="video/mp4">
+        <img src="/public/images/scent5.jpg" alt="Calming Nature" class="w-full h-full object-cover" />
+    </video>
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/70 to-primary-dark/80 z-10"></div>
+    <div class="container relative z-20 flex flex-col items-center justify-center text-center text-white px-6">
+        <div data-aos="fade-down">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 font-heading">Find Your Moment of Calm</h1>
+            <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto font-body">Experience premium, natural aromatherapy crafted to enhance well-being and restore balance.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="index.php?page=quiz" class="btn btn-primary">Find Your Perfect Scent</a>
+                <a href="index.php?page=products" class="btn btn-secondary">Shop Collection</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="featured-section py-16 bg-light" id="featured-products">
+    <div class="container mx-auto text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-12" data-aos="fade-up">Featured Collections</h2>
+        <div class="featured-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-6">
+            <?php if (!empty($featuredProducts)): ?>
+                <?php foreach ($featuredProducts as $product): ?>
+                    <div class="product-card bg-white rounded-lg shadow hover:shadow-xl transition" data-aos="zoom-in">
+                        <?php if (!empty($product['display_badge'])): ?>
+                            <span class="badge badge-<?= strtolower(str_replace(' ', '-', $product['display_badge'])) ?>">
+                                <?= htmlspecialchars($product['display_badge']) ?>
+                            </span>
+                        <?php endif; ?>
+                        <img src="<?= htmlspecialchars($product['image'] ?? '/public/images/placeholder.jpg') ?>" 
+                             alt="<?= htmlspecialchars($product['name']) ?>"
+                             class="w-full h-48 object-cover rounded"
+                             loading="lazy">
+                        <div class="product-card-content p-4">
+                            <h3 class="product-title text-xl font-semibold mt-4 mb-2"><?= htmlspecialchars($product['name']) ?></h3>
+                            <p class="product-category text-gray-600 mb-1"><?= htmlspecialchars($product['category_name']) ?></p>
+                            <p class="product-price text-primary font-bold mb-2">$<?= number_format($product['price'], 2) ?></p>
+                            <div class="product-actions flex gap-2 justify-center">
+                                <a href="index.php?page=product&id=<?= $product['id'] ?>" class="btn btn-primary">View Details</a>
+                                <?php if ($product['stock_quantity'] > 0): ?>
+                                    <button class="btn btn-secondary add-to-cart" 
+                                            data-product-id="<?= $product['id'] ?>"
+                                            <?= $product['stock_quantity'] <= $product['low_stock_threshold'] ? 'data-low-stock="true"' : '' ?>>
+                                        Add to Cart
+                                    </button>
+                                <?php else: ?>
+                                    <button class="btn btn-disabled" disabled>Out of Stock</button>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="col-span-full text-center text-gray-600">
+                    <p>Discover our curated collection of premium aromatherapy products.</p>
+                    <a href="index.php?page=products" class="inline-block mt-4 text-primary hover:underline">Browse All Products</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</section>
+
+<!-- Our Story Section -->
+<section class="about-section py-20 bg-white">
+    <div class="container">
+        <div class="about-container grid md:grid-cols-2 gap-12 items-center">
+            <div class="about-content" data-aos="fade-right">
+                <h2 class="text-3xl font-bold mb-6">Our Story</h2>
+                <p class="mb-6">At The Scent, we produce a range of therapeutic aromatherapy products using high-quality raw materials sourced from around the world.</p>
+                <p class="mb-6">Our unique and creative formulations are crafted with expertise to create harmonious, balanced, and well-rounded aromatherapy products that enhance both mental and physical well-being.</p>
+                <a href="index.php?page=about" class="btn btn-secondary">Learn More</a>
+            </div>
+            <div class="about-image" data-aos="fade-left">
+                <img src="<?= file_exists($_SERVER['DOCUMENT_ROOT'] . '/public/images/about/about.jpg') ? '/public/images/about/about.jpg' : 'https://placehold.co/800x600/e9ecef/495057?text=About+The+Scent' ?>" 
+                     alt="About The Scent" 
+                     class="rounded-lg shadow-xl w-full">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Benefits Section -->
+<section class="py-20 bg-white">
+    <div class="container">
+        <h2 class="text-3xl font-bold text-center mb-12" data-aos="fade-up">Why Choose The Scent</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="benefit-card" data-aos="fade-up" data-aos-delay="0">
+                <i class="fas fa-leaf text-4xl text-primary mb-4"></i>
+                <h3 class="text-xl font-semibold mb-4">Natural Ingredients</h3>
+                <p>Premium quality raw materials sourced from around the world.</p>
+            </div>
+            <div class="benefit-card" data-aos="fade-up" data-aos-delay="100">
+                <i class="fas fa-heart text-4xl text-primary mb-4"></i>
+                <h3 class="text-xl font-semibold mb-4">Wellness Focus</h3>
+                <p>Products designed to enhance both mental and physical well-being.</p>
+            </div>
+            <div class="benefit-card" data-aos="fade-up" data-aos-delay="200">
+                <i class="fas fa-certificate text-4xl text-primary mb-4"></i>
+                <h3 class="text-xl font-semibold mb-4">Expert Crafted</h3>
+                <p>Unique formulations created by aromatherapy experts.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quiz/Finder Section -->
+<section class="quiz-section py-20 bg-light">
+    <div class="container">
+        <h2 class="text-3xl font-bold text-center mb-8" data-aos="fade-up">Discover Your Perfect Scent</h2>
+        <p class="text-center mb-12 text-lg" data-aos="fade-up" data-aos-delay="100">Tailor your aromatherapy experience to your mood and needs.</p>
+        <div class="grid md:grid-cols-5 gap-6 mb-8">
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="0">
+                <i class="fas fa-leaf text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Relaxation</h3>
+                <p class="text-sm text-gray-600 text-center">Calming scents to help you unwind.</p>
+            </div>
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="100">
+                <i class="fas fa-bolt text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Energy</h3>
+                <p class="text-sm text-gray-600 text-center">Invigorating aromas to uplift your day.</p>
+            </div>
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="200">
+                <i class="fas fa-brain text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Focus</h3>
+                <p class="text-sm text-gray-600 text-center">Clarifying blends for a clear mind.</p>
+            </div>
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="300">
+                <i class="fas fa-moon text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Sleep</h3>
+                <p class="text-sm text-gray-600 text-center">Soothing scents for a peaceful night's rest.</p>
+            </div>
+            <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="400">
+                <i class="fas fa-balance-scale text-4xl text-primary mb-4"></i>
+                <h3 class="font-semibold mb-2">Balance</h3>
+                <p class="text-sm text-gray-600 text-center">Harmonious aromas to center you.</p>
+            </div>
+        </div>
+        <div class="text-center" data-aos="fade-up" data-aos-delay="500">
+            <a href="index.php?page=quiz" class="btn btn-primary">Take the Full Scent Quiz</a>
+        </div>
+    </div>
+</section>
+
+<!-- Newsletter Section -->
+<section class="newsletter-section py-20 bg-light">
+    <div class="container">
+        <div class="max-w-2xl mx-auto text-center" data-aos="fade-up">
+            <h2 class="text-3xl font-bold mb-6">Stay Connected</h2>
+            <p class="mb-8">Subscribe to receive updates, exclusive offers, and aromatherapy tips.</p>
+            <form id="newsletter-form" class="newsletter-form flex flex-col sm:flex-row gap-4 justify-center">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                <input type="email" name="email" placeholder="Enter your email" required class="flex-1 px-4 py-2 rounded-full border border-gray-300 focus:border-primary">
+                <button type="submit" class="btn btn-primary">Subscribe</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="py-20 bg-white">
+    <div class="container">
+        <h2 class="text-3xl font-bold text-center mb-12" data-aos="fade-up">What Our Community Says</h2>
+        <div class="testimonial-grid grid md:grid-cols-3 gap-8">
+            <div class="testimonial-card bg-light p-8 rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="0">
+                <p class="mb-4 italic">"The Lavender Essential Oil transformed my bedtime routine—its calming aroma truly helps me unwind."</p>
+                <span class="block font-semibold mb-2">- Sarah L., Los Angeles</span>
+                <div class="text-accent text-lg">★★★★★</div>
+            </div>
+            <div class="testimonial-card bg-light p-8 rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="100">
+                <p class="mb-4 italic">"The Focus Blend oil improved my concentration at home without overwhelming my senses."</p>
+                <span class="block font-semibold mb-2">- Michael T., Chicago</span>
+                <div class="text-accent text-lg">★★★★★</div>
+            </div>
+            <div class="testimonial-card bg-light p-8 rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="200">
+                <p class="mb-4 italic">"Handcrafted soaps that feel divine and truly nourish sensitive skin. A luxurious experience."</p>
+                <span class="block font-semibold mb-2">- Emma R., Seattle</span>
+                <div class="text-accent text-lg">★★★★★</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize AOS
+    AOS.init({
+        duration: 800,
+        offset: 100,
+        once: true
+    });
+
+    // Initialize Particles.js
+    particlesJS.load('particles-js', '/public/particles.json', function() {
+        console.log('Particles.js loaded');
+    });
+
+    // Handle add to cart buttons
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', async function() {
+            const productId = this.dataset.productId;
+            const isLowStock = this.dataset.lowStock === 'true';
+            
+            try {
+                const response = await fetch('index.php?page=cart&action=add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRF-Token': '<?= $_SESSION['csrf_token'] ?? '' ?>'
+                    },
+                    body: `product_id=${productId}&quantity=1`
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update cart count
+                    const cartCount = document.querySelector('.cart-count');
+                    if (cartCount) {
+                        cartCount.textContent = data.cart_count;
+                    }
+                    
+                    // Show success message
+                    showFlashMessage('Product added to cart', 'success');
+                    
+                    // Disable button if product is now out of stock
+                    if (data.stock_status === 'out_of_stock') {
+                        this.disabled = true;
+                        this.classList.remove('btn-secondary');
+                        this.classList.add('btn-disabled');
+                        this.textContent = 'Out of Stock';
+                    }
+                    
+                    // Show low stock warning
+                    if (data.stock_status === 'low_stock' && !isLowStock) {
+                        showFlashMessage('Limited quantity available', 'info');
+                        this.dataset.lowStock = 'true';
+                    }
+                } else {
+                    showFlashMessage(data.message || 'Error adding to cart', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showFlashMessage('Error adding to cart', 'error');
+            }
+        });
+    });
+
+    // Newsletter form submission
+    const newsletterForm = document.getElementById('newsletter-form');
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('index.php?page=newsletter&action=subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(formData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.innerHTML = '<p class="text-success">Thank you for subscribing!</p>';
+                } else {
+                    showFlashMessage(data.message || 'Subscription failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showFlashMessage('Subscription failed', 'error');
+            }
+        });
+    }
+
+    // Flash message helper
+    function showFlashMessage(message, type = 'info') {
+        const flashDiv = document.createElement('div');
+        flashDiv.className = `flash-message ${type}`;
+        flashDiv.textContent = message;
+        document.body.appendChild(flashDiv);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            flashDiv.style.opacity = '0';
+            setTimeout(() => flashDiv.remove(), 300);
+        }, 3000);
+    }
+});
+</script>
+
+<?php require_once __DIR__ . '/layout/footer.php'; ?>
+```
+
+# views/layout/header.php  
+```code
+<?php
+require_once __DIR__ . '/../../includes/auth.php';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= isset($pageTitle) ? htmlspecialchars($pageTitle) : 'The Scent - Premium Aromatherapy Products' ?></title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Montserrat:wght@400;500;600&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1A4D5A',
+                        'primary-dark': '#164249',
+                        secondary: '#A0C1B1',
+                        accent: '#D4A76A'
+                    },
+                    fontFamily: {
+                        heading: ['Cormorant Garamond', 'serif'],
+                        body: ['Montserrat', 'sans-serif'],
+                        accent: ['Raleway', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/public/css/style.css">
+    
+    <!-- Scripts -->
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // Initialize mobile menu functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+            const mobileMenu = document.getElementById('mobile-menu');
+            let isMenuOpen = false;
+
+            function toggleMenu() {
+                isMenuOpen = !isMenuOpen;
+                mobileMenu.classList.toggle('active');
+                document.body.classList.toggle('menu-open');
+                mobileMenuToggle.innerHTML = isMenuOpen ? 
+                    '<i class="fas fa-times"></i>' : 
+                    '<i class="fas fa-bars"></i>';
+            }
+
+            function closeMenu() {
+                if (isMenuOpen) {
+                    isMenuOpen = false;
+                    mobileMenu.classList.remove('active');
+                    document.body.classList.remove('menu-open');
+                    mobileMenuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                }
+            }
+
+            mobileMenuToggle?.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleMenu();
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', function(e) {
+                if (isMenuOpen && !e.target.closest('.main-nav')) {
+                    closeMenu();
+                }
+            });
+
+            // Close menu when pressing escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && isMenuOpen) {
+                    closeMenu();
+                }
+            });
+
+            // Handle menu links
+            mobileMenu?.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', closeMenu);
+            });
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <nav class="main-nav">
+            <div class="container">
+                <a href="index.php" class="logo">
+                    The Scent
+                    <span>Premium Aromatherapy</span>
+                </a>
+                <button class="mobile-menu-toggle md:hidden" aria-label="Toggle Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="nav-links" id="mobile-menu">
+                    <a href="index.php?page=products">Shop</a>
+                    <a href="index.php?page=quiz">Find Your Scent</a>
+                    <a href="index.php?page=about">About</a>
+                    <a href="index.php?page=contact">Contact</a>
+                </div>
+                <div class="nav-actions">
+                    <?php if (isLoggedIn()): ?>
+                        <a href="index.php?page=account" class="account-link">
+                            <i class="fas fa-user"></i>
+                            Account
+                        </a>
+                    <?php else: ?>
+                        <a href="index.php?page=login">Login</a>
+                    <?php endif; ?>
+                    <a href="index.php?page=cart" class="cart-link">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-count"><?= isset($_SESSION['cart_count']) ? $_SESSION['cart_count'] : 0 ?></span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <?php if (isset($_SESSION['flash_message'])): ?>
+            <div class="flash-message <?= $_SESSION['flash_type'] ?? 'info' ?>">
+                <?= $_SESSION['flash_message'] ?>
+            </div>
+            <?php unset($_SESSION['flash_message'], $_SESSION['flash_type']); ?>
+        <?php endif; ?>
+```
+
+# views/layout/footer.php  
+```code
+</main>
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="index.php?page=products">Shop</a></li>
+                        <li><a href="index.php?page=quiz">Find Your Scent</a></li>
+                        <li><a href="index.php?page=about">About Us</a></li>
+                        <li><a href="index.php?page=contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Customer Service</h3>
+                    <ul>
+                        <li><a href="index.php?page=shipping">Shipping Info</a></li>
+                        <li><a href="index.php?page=returns">Returns</a></li>
+                        <li><a href="index.php?page=faq">FAQ</a></li>
+                        <li><a href="index.php?page=privacy">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Newsletter</h3>
+                    <p>Subscribe for updates and exclusive offers</p>
+                    <form id="newsletter-form" class="newsletter-form">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                        <input type="email" name="email" placeholder="Enter your email" required>
+                        <button type="submit" class="btn-primary">Subscribe</button>
+                    </form>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; <?= date('Y') ?> The Scent. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-pinterest"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script>
+        // Initialize AOS
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init({
+                duration: 800,
+                offset: 100,
+                once: true
+            });
+
+            // Initialize particles.js if element exists
+            if (document.getElementById('particles-js')) {
+                particlesJS.load('particles-js', '/particles.json');
+            }
+        });
+
+        // Newsletter Form
+        document.getElementById('newsletter-form')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('index.php?page=newsletter&action=subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.innerHTML = '<p class="success">Thank you for subscribing!</p>';
+                } else {
+                    alert(data.message || 'Subscription failed. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Subscription failed. Please try again.');
+            });
+        });
+
+        // Add to Cart functionality with CSRF protection
+        document.querySelectorAll('.add-to-cart')?.forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.dataset.productId;
+                const formData = new FormData();
+                formData.append('product_id', productId);
+                formData.append('quantity', '1');
+                formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+                fetch('index.php?page=cart&action=add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const cartCount = document.querySelector('.cart-count');
+                        if (cartCount) {
+                            cartCount.textContent = data.cartCount;
+                        }
+                        alert('Product added to cart!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to add product to cart. Please try again.');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+```
+
