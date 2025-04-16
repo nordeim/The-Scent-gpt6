@@ -4,10 +4,10 @@
   --font-body: 'Montserrat', sans-serif;
   --font-accent: 'Raleway', sans-serif;
 
-  --color-primary: #1A4D5A;
-  --color-secondary: #A0C1B1;
-  --color-accent: #D4A76A;
-  --color-background: #F8F5F2;
+  --color-primary: #1A4D5A; /* Deep Teal */
+  --color-secondary: #A0C1B1; /* Soft Mint Green */
+  --color-accent: #D4A76A; /* Muted Gold/Ochre */
+  --color-background: #F8F5F2; /* Warm Off-White */
   --color-text: #333333;
   --color-text-light: #FFFFFF;
   --color-border: #e0e0e0;
