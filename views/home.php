@@ -5,37 +5,33 @@ $delay = 0; // Initialize delay counter for animations
 ?>
 
 <!-- Hero Section with Video Background -->
-<section class="hero-section relative h-[80vh] flex items-center justify-center overflow-hidden">
-    <!-- Video Background -->
-    <video class="absolute inset-0 w-full h-full object-cover z-0" autoplay muted loop playsinline poster="/public/images/scent5.jpg">
+<section class="hero-section relative min-h-screen flex items-center justify-center overflow-hidden">
+    <div id="particles-js" class="absolute inset-0 z-0"></div>
+    <video class="absolute inset-0 w-full h-full object-cover z-[-1]" autoplay muted loop playsinline poster="/public/images/scent5.jpg">
         <source src="/public/videos/hero.mp4" type="video/mp4">
         <img src="/public/images/scent5.jpg" alt="Calming Nature" class="w-full h-full object-cover" />
     </video>
-    <!-- Particles Background -->
-    <div id="particles-js" class="absolute inset-0 z-10"></div>
-    <!-- Gradient Overlay -->
-    <div class="absolute inset-0 bg-gradient-to-br from-primary/60 to-primary-dark/60 z-20"></div>
-    <!-- Hero Content -->
-    <div class="container relative z-30 h-full flex items-center justify-center text-center text-white">
-        <div data-aos="fade-up" data-aos-duration="1000">
-            <h1 class="text-5xl md:text-6xl font-bold mb-6 font-heading">Find Your Moment of Calm</h1>
-            <p class="text-xl md:text-2xl mb-8 max-w-2xl mx-auto font-body">Experience premium, natural aromatherapy crafted to enhance well-being and restore balance.</p>
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/70 to-primary-dark/80 z-10"></div>
+    <div class="container relative z-20 flex flex-col items-center justify-center text-center text-white px-6">
+        <div data-aos="fade-down">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 font-heading">Find Your Moment of Calm</h1>
+            <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto font-body">Experience premium, natural aromatherapy crafted to enhance well-being and restore balance.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="index.php?page=quiz" class="btn-primary">Find Your Perfect Scent</a>
-                <a href="index.php?page=products" class="btn-secondary">Shop Collection</a>
+                <a href="index.php?page=quiz" class="btn btn-primary">Find Your Perfect Scent</a>
+                <a href="index.php?page=products" class="btn btn-secondary">Shop Collection</a>
             </div>
         </div>
     </div>
 </section>
 
 <!-- Featured Products Section -->
-<section class="featured-section" data-aos="fade-up">
-    <div class="container">
-        <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">Featured Collections</h2>
-        <div class="featured-grid">
+<section class="featured-section py-16 bg-light" id="featured-products">
+    <div class="container mx-auto text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-12" data-aos="fade-up">Featured Collections</h2>
+        <div class="featured-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-6">
             <?php if (!empty($featuredProducts)): ?>
                 <?php foreach ($featuredProducts as $product): ?>
-                    <div class="product-card" data-aos="fade-up" data-aos-delay="<?= $delay += 100 ?>">
+                    <div class="product-card bg-white rounded-lg shadow hover:shadow-xl transition" data-aos="zoom-in">
                         <?php if (!empty($product['display_badge'])): ?>
                             <span class="badge badge-<?= strtolower(str_replace(' ', '-', $product['display_badge'])) ?>">
                                 <?= htmlspecialchars($product['display_badge']) ?>
@@ -43,22 +39,22 @@ $delay = 0; // Initialize delay counter for animations
                         <?php endif; ?>
                         <img src="<?= htmlspecialchars($product['image'] ?? '/public/images/placeholder.jpg') ?>" 
                              alt="<?= htmlspecialchars($product['name']) ?>"
-                             class="w-full h-64 object-cover"
+                             class="w-full h-48 object-cover rounded"
                              loading="lazy">
-                        <div class="product-card-content">
-                            <h3 class="product-title"><?= htmlspecialchars($product['name']) ?></h3>
-                            <p class="product-category"><?= htmlspecialchars($product['category_name']) ?></p>
-                            <p class="product-price">$<?= number_format($product['price'], 2) ?></p>
-                            <div class="product-actions">
-                                <a href="index.php?page=product&id=<?= $product['id'] ?>" class="btn-primary">View Details</a>
+                        <div class="product-card-content p-4">
+                            <h3 class="product-title text-xl font-semibold mt-4 mb-2"><?= htmlspecialchars($product['name']) ?></h3>
+                            <p class="product-category text-gray-600 mb-1"><?= htmlspecialchars($product['category_name']) ?></p>
+                            <p class="product-price text-primary font-bold mb-2">$<?= number_format($product['price'], 2) ?></p>
+                            <div class="product-actions flex gap-2 justify-center">
+                                <a href="index.php?page=product&id=<?= $product['id'] ?>" class="btn btn-primary">View Details</a>
                                 <?php if ($product['stock_quantity'] > 0): ?>
-                                    <button class="btn-secondary add-to-cart" 
+                                    <button class="btn btn-secondary add-to-cart" 
                                             data-product-id="<?= $product['id'] ?>"
                                             <?= $product['stock_quantity'] <= $product['low_stock_threshold'] ? 'data-low-stock="true"' : '' ?>>
                                         Add to Cart
                                     </button>
                                 <?php else: ?>
-                                    <button class="btn-disabled" disabled>Out of Stock</button>
+                                    <button class="btn btn-disabled" disabled>Out of Stock</button>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -75,14 +71,14 @@ $delay = 0; // Initialize delay counter for animations
 </section>
 
 <!-- Our Story Section -->
-<section class="py-20 bg-white">
+<section class="about-section py-20 bg-white">
     <div class="container">
-        <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div class="about-container grid md:grid-cols-2 gap-12 items-center">
             <div class="about-content" data-aos="fade-right">
                 <h2 class="text-3xl font-bold mb-6">Our Story</h2>
                 <p class="mb-6">At The Scent, we produce a range of therapeutic aromatherapy products using high-quality raw materials sourced from around the world.</p>
                 <p class="mb-6">Our unique and creative formulations are crafted with expertise to create harmonious, balanced, and well-rounded aromatherapy products that enhance both mental and physical well-being.</p>
-                <a href="index.php?page=about" class="btn-secondary">Learn More</a>
+                <a href="index.php?page=about" class="btn btn-secondary">Learn More</a>
             </div>
             <div class="about-image" data-aos="fade-left">
                 <img src="<?= file_exists($_SERVER['DOCUMENT_ROOT'] . '/public/images/about/about.jpg') ? '/public/images/about/about.jpg' : 'https://placehold.co/800x600/e9ecef/495057?text=About+The+Scent' ?>" 
@@ -150,21 +146,21 @@ $delay = 0; // Initialize delay counter for animations
             </div>
         </div>
         <div class="text-center" data-aos="fade-up" data-aos-delay="500">
-            <a href="index.php?page=quiz" class="btn-primary">Take the Full Scent Quiz</a>
+            <a href="index.php?page=quiz" class="btn btn-primary">Take the Full Scent Quiz</a>
         </div>
     </div>
 </section>
 
 <!-- Newsletter Section -->
-<section class="py-20 bg-light">
+<section class="newsletter-section py-20 bg-light">
     <div class="container">
         <div class="max-w-2xl mx-auto text-center" data-aos="fade-up">
             <h2 class="text-3xl font-bold mb-6">Stay Connected</h2>
             <p class="mb-8">Subscribe to receive updates, exclusive offers, and aromatherapy tips.</p>
-            <form id="newsletter-form" class="newsletter-form">
+            <form id="newsletter-form" class="newsletter-form flex flex-col sm:flex-row gap-4 justify-center">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
-                <input type="email" name="email" placeholder="Enter your email" required>
-                <button type="submit" class="btn-primary">Subscribe</button>
+                <input type="email" name="email" placeholder="Enter your email" required class="flex-1 px-4 py-2 rounded-full border border-gray-300 focus:border-primary">
+                <button type="submit" class="btn btn-primary">Subscribe</button>
             </form>
         </div>
     </div>
@@ -174,7 +170,7 @@ $delay = 0; // Initialize delay counter for animations
 <section class="py-20 bg-white">
     <div class="container">
         <h2 class="text-3xl font-bold text-center mb-12" data-aos="fade-up">What Our Community Says</h2>
-        <div class="grid md:grid-cols-3 gap-8 testimonial-grid">
+        <div class="testimonial-grid grid md:grid-cols-3 gap-8">
             <div class="testimonial-card bg-light p-8 rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="0">
                 <p class="mb-4 italic">"The Lavender Essential Oil transformed my bedtime routine—its calming aroma truly helps me unwind."</p>
                 <span class="block font-semibold mb-2">- Sarah L., Los Angeles</span>
