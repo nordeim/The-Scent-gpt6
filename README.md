@@ -1,6 +1,6 @@
 # 🌿 The Scent - Premium Aromatherapy E-commerce Platform
 
-Welcome to **The Scent**, a modern, full-featured, and beautifully crafted e-commerce platform built to showcase and sell premium natural aromatherapy products. This project is designed from the ground up using **PHP**, **MySQL**, **Apache2**, and modern frontend technologies like **Tailwind CSS**, **AOS.js**, and **Particles.js** to deliver a seamless and immersive shopping experience.
+Welcome to **The Scent**, a modern, full-featured, and beautifully crafted e-commerce platform built to showcase and sell premium natural aromatherapy products. This project is designed from the ground up for extensibility, security, and seamless user experience.
 
 > 🧘 “Find your moment of calm” – Discover your perfect scent and enhance your well-being.
 
@@ -34,8 +34,8 @@ Welcome to **The Scent**, a modern, full-featured, and beautifully crafted e-com
 8. [📦 Installation Instructions](#-installation-instructions)
 9. [🚀 Deployment Guide Summary](#-deployment-guide-summary)
 10. [🧪 Scent Finder Quiz](#-scent-quiz)
-11. [🛡️ Security Best Practices](#-security)
-12. [🔧 Customization & Extensibility](#-customization)
+11. [🛡️ Security Best Practices](#-security-best-practices)
+12. [🔧 Customization & Extensibility](#-customization--extensibility)
 13. [🤝 Contributing](#-contributing)
 14. [📄 License](#-license)
 15. [🙏 Credits](#-credits)
@@ -47,116 +47,94 @@ Welcome to **The Scent**, a modern, full-featured, and beautifully crafted e-com
 
 **The Scent** is more than just an e-commerce platform — it’s an experience. Built specifically to support the sale and recommendation of **premium aromatherapy products**, the platform integrates:
 
-- Clean, modern UI/UX
+- A clean, modern, responsive UI/UX
 - Personalized shopping via a scent quiz
-- Dynamic product catalog
+- Dynamic product catalog and featured collections
 - Flexible cart and order system
-- Admin dashboard (modular)
+- Modular codebase for easy customization and future growth
 
-This project was crafted with modularity, performance, and user experience in mind, making it a perfect foundation for small-to-medium scale wellness or natural product businesses.
+Designed for extensibility, performance, and user-centric experience, The Scent is a robust foundation for wellness or natural product businesses.
 
 ---
 
 ## 🎯 Features
 
 ### 🛍️ Core E-commerce
-✅ **Modern Landing Page**  
-✅ **Essential Oil & Soap Catalog**  
-✅ **Personalized Scent Finder Quiz**  
-✅ **Product Categories & Recommendations**  
-✅ **Responsive Design (Mobile-Friendly)**  
+- **Modern Landing Page** with video and animated hero
+- **Essential Oil & Soap Catalog** with categories and featured items
+- **Personalized Scent Finder Quiz**
+- **Product Recommendations**
+- **Responsive Design (Mobile-Friendly)**
 
 ### 🔐 User Management
-✅ **User Authentication (Login/Register)**  
-✅ **Password Reset System**  
-✅ **User Profile Management**  
-✅ **Order History & Tracking**  
+- **User Authentication (Login/Register)**
+- **Password Reset System**
+- **User Profile Management**
+- **Order History & Tracking**
 
 ### 🛒 Shopping Experience
-✅ **Real-time Shopping Cart**  
-- Ajax-based updates
-- Stock validation
-- Price calculations
+- **Real-time Shopping Cart** (AJAX updates)
+- **Stock Validation**
+- **Price Calculations**
+- **Secure Checkout Process**
+- **Order Confirmation**
 
-✅ **Secure Checkout Process**  
-- Multiple payment methods
-- Address validation
-- Order confirmation
-
-✅ **Payment Integration**  
-- Stripe integration
-- Payment intent handling
-- Secure transaction processing
-- Error handling & recovery
-
-### 💼 Business Features
-✅ **Inventory Management**  
-- Real-time stock tracking
-- Low stock alerts
-- Stock movement history
-- Backorder handling
-
-✅ **Tax System**  
-- Country/state-based tax rates
-- Real-time calculations
-- Tax reporting capabilities
-
-✅ **Coupon System**  
-- Multiple discount types
-- Usage tracking
-- Validity periods
-- Minimum purchase rules
+### 💼 Business Features *(partially implemented / extensible)*
+- **Inventory Management**
+- **Tax System**
+- **Coupon System** *(planned)*
 
 ### 📧 Communication
-✅ **Email Notification System**  
-- Order confirmations
-- Shipping updates
-- Password reset
-- Newsletter system
+- **Email Notification System** (Order confirmation, password reset, newsletter)
+- **Newsletter Signup with AJAX**
 
-### 👑 Admin Features
-✅ **Admin Dashboard**  
-- Product management
-- Order processing
-- User management
-- Inventory control
-- Tax rate management
-- Coupon administration
+### 👑 Admin Features *(modular, basic implementation; dashboard expansion planned)*
+- **Product Management**
+- **Order Processing**
+- **User Management**
+- **Inventory Control**
 
 ---
 
 ## 🖼️ Screenshots
 
-> 📸 Full resolution screenshots are available in the `/images/screenshots/` folder.
+> 📸 Full resolution screenshots are available in the `/public/images/screenshots/` folder.
 
 | Page | Screenshot |
 |------|------------|
-| Landing Page | ![Home](images/screenshots/home.png) |
-| Product Details | ![Product](images/screenshots/product.png) |
-| Quiz Intro | ![Quiz](images/screenshots/quiz.png) |
-| Quiz Results | ![Results](images/screenshots/results.png) |
-| Cart Page | ![Cart](images/screenshots/cart.png) |
+| Landing Page | ![Home](public/images/screenshots/home.png) |
+| Product Details | ![Product](public/images/screenshots/product.png) |
+| Quiz Intro | ![Quiz](public/images/screenshots/quiz.png) |
+| Quiz Results | ![Results](public/images/screenshots/results.png) |
+| Cart Page | ![Cart](public/images/screenshots/cart.png) |
+
+*(If these files are missing, please add screenshots or update/remove this section.)*
 
 ---
 
 ## 🧱 System Architecture
 
-**MVC-like Modular PHP Architecture:**
+**Custom MVC-Inspired Modular PHP Architecture:**
 
 ```
-[Browser]
+[Browser/Client]
    ↓
 [Apache2 Server]
    ↓
-[public/index.php] → [Router] → [Controllers] → [Models] → [MySQL DB]
-            ↑             ↓         ↓
-         [Views]     [Includes]   [Sessions]
+[public/index.php] → [Controllers] → [Models (optional/planned)] → [MySQL DB]
+        ↓
+     [Views] 
+        ↓
+   [Includes (header, footer, db, auth, security)]
+        ↓
+    [Sessions, CSRF, Middleware]
 ```
 
-- `Controllers`: Handle business logic
-- `Models`: DB abstraction layer (PDO)
-- `Views`: HTML templates
-- `Includes`: Shared components (header, footer, db)
+- `Controllers`: Business logic and request routing (Cart, Product, Quiz, Account, etc.)
+- `Models`: (Optional/Planned) Database abstraction
+- `Views`: Server-rendered HTML templates
+- `Includes`: Shared core (header, footer, authentication, database, security)
+- `public/`: Web root for assets and entry point
 
 ---
 
@@ -164,7 +142,7 @@ This project was crafted with modularity, performance, and user experience in mi
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | HTML5, Tailwind CSS, AOS.js, Particles.js |
+| Frontend | HTML5, Tailwind CSS, Custom CSS, AOS.js, Particles.js, Font Awesome |
 | Backend | PHP 8.0+, Apache2 |
 | Database | MySQL 5.7+ |
 | Animations | AOS.js (fade/slide), Particles.js |
@@ -177,17 +155,39 @@ This project was crafted with modularity, performance, and user experience in mi
 
 ```
 /the-scent/
-├── public/             # Web root
-│   ├── index.php       # Front controller
-│   └── assets/         # JS, CSS, images
-├── includes/           # Shared PHP scripts
-├── controllers/        # Business logic
-├── models/             # DB queries
-├── views/              # HTML templates
-├── admin/              # Admin dashboard
-├── config.php          # DB constants
-├── .htaccess           # URL rewriting
-└── README.md           # You are here
+├── public/                   # Web root, assets, entry point
+│   ├── index.php             # Main entry/routing script
+│   ├── css/                  # Main CSS (style.css)
+│   ├── images/               # Product, hero, and UI images
+│   ├── videos/               # Hero background video(s)
+│   ├── particles.json        # Particles.js settings
+│   └── .htaccess             # URL rewriting
+├── includes/                 # Shared PHP scripts
+│   ├── auth.php
+│   ├── db.php
+│   ├── SecurityMiddleware.php
+│   └── ErrorHandler.php
+├── controllers/              # Business logic controllers
+│   ├── ProductController.php
+│   ├── CartController.php
+│   ├── QuizController.php
+│   └── ... (others)
+├── models/                   # (Optional/Planned) DB abstraction
+├── views/                    # HTML templates
+│   ├── home.php
+│   ├── layout/
+│   │   ├── header.php
+│   │   └── footer.php
+│   └── ... (others)
+├── admin/                    # (Basic, extensible) Admin dashboard
+├── db/                       # Database schema and seed data
+│   └── schema.sql
+├── config.php                # DB and app configuration
+├── .env                      # (Optional) Environment variables
+├── README.md                 # Project documentation
+├── technical_design_specification.md
+├── deployment_guide.md
+└── LICENSE
 ```
 
 ---
@@ -196,14 +196,14 @@ This project was crafted with modularity, performance, and user experience in mi
 
 ### ➕ Core Tables
 
-- `users` – Auth, roles
+- `users` – Authentication, roles
 - `products` – Product catalog
-- `categories` – Product types
-- `orders` – Order header
+- `categories` – Product categories
+- `orders` – Order headers
 - `order_items` – Order lines
-- `cart_items` – Session/user cart
-- `quiz_results` – Scent finder
-- `newsletter_subscribers` – Email list
+- `cart_items` – Shopping cart (user/session)
+- `quiz_results` – Scent quiz results
+- `newsletter_subscribers` – Newsletter opt-ins
 
 ### 🔑 ER Diagram (Simplified)
 
@@ -213,6 +213,8 @@ products >─── categories
 users ───< quiz_results
 ```
 
+See [`db/schema.sql`](db/schema.sql) for full schema.
+
 ---
 
 ## 📦 Installation Instructions
@@ -220,24 +222,26 @@ users ───< quiz_results
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-org/the-scent.git
-cd the-scent
+git clone https://github.com/sepnetflix/The-Scent-gpt6.git
+cd The-Scent-gpt6
 ```
 
 ### 2. Set up the database
 
 ```sql
 CREATE DATABASE the_scent;
-GRANT ALL ON the_scent.* TO 'scent_user'@'localhost' IDENTIFIED BY 'pass';
+GRANT ALL ON the_scent.* TO 'scent_user'@'localhost' IDENTIFIED BY 'your_password';
 ```
 
 Then import the schema:
 
 ```bash
-mysql -u scent_user -p the_scent < database/schema.sql
+mysql -u scent_user -p the_scent < db/schema.sql
 ```
 
 ### 3. Configure `/config.php`
+
+Set your DB and app config:
 
 ```php
 define('DB_HOST', 'localhost');
@@ -252,6 +256,12 @@ define('DB_PASS', 'your_password');
 chmod -R 755 public/uploads
 chown -R www-data:www-data public/uploads
 ```
+
+### 5. Set up Apache
+
+- Enable `mod_rewrite`
+- Set `DocumentRoot` to `/public`
+- Make sure `.htaccess` is enabled
 
 ---
 
@@ -281,8 +291,11 @@ Includes:
 
 ## 🧪 Scent Quiz
 
-The scent quiz is a unique feature that:
-- Asks users to select a **mood or need** (Relaxation, Energy, Focus, etc.)
+The scent quiz is a unique feature that helps users discover personalized product recommendations by selecting their **mood or need** (Relaxation, Energy, Focus, Sleep, Balance, etc.).
+
+- Quiz logic is implemented in `/controllers/QuizController.php` and `/views/quiz.php`.
+- Results are mapped to product recommendations.
+- Results can be emailed or stored for logged-in users.
 
 ---
 
@@ -293,82 +306,72 @@ Security is a top priority in *The Scent*. The platform includes several measure
 ### 🔐 Authentication
 
 - Passwords are hashed using `password_hash()` (bcrypt).
-- Login uses `password_verify()` to compare hashes.
-- Sessions are initiated securely with `session_start()`.
-
-```php
-if (password_verify($inputPassword, $user['password'])) {
-    $_SESSION['user'] = $user;
-}
-```
+- Login uses `password_verify()` with secure session handling.
 
 ### 🛡️ Input Sanitization
 
-- All inputs are sanitized using:
-  - `htmlspecialchars()` for XSS protection
-  - `filter_input()` for validation
-  - Prepared statements via PDO for SQL injection prevention
+- All inputs are validated and sanitized.
+- Output is escaped via `htmlspecialchars()` to prevent XSS.
+- Prepared statements and PDO are used to prevent SQL injection.
+
+### 🔄 CSRF Protection
+
+- CSRF tokens are generated per session and validated on all POST forms (including AJAX).
+- Example:
 
 ```php
-$email = htmlspecialchars($_POST['email']);
-$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+<input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 ```
 
 ### 🔒 File Permissions
 
 - `config.php` permissions are set to `640`
-- Upload directories like `public/uploads` are restricted to `www-data` only
+- Upload directories like `public/uploads` are restricted for webserver use only
 
 ```bash
 chmod 640 config.php
 chown www-data:www-data config.php
 ```
 
-### 🔄 CSRF Protection (Future Enhancement)
+### 🏦 Rate Limiting
 
-We recommend integrating CSRF tokens into forms for additional protection:
-
-```php
-<input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-```
+- Login, registration, and sensitive flows are rate-limited to prevent brute force.
 
 ---
 
 ## 🔧 Customization & Extensibility
 
-The codebase is built with flexibility in mind. You can easily extend it to suit your business needs.
+The codebase is modular and easy to extend.
 
 ### ➕ Add a New Product
 
-1. Add via the admin dashboard (or insert into `products` table):
+Add via the admin dashboard (if enabled) or directly to the `products` table:
 
 ```sql
-INSERT INTO products (name, price, image, category_id, stock)
-VALUES ('New Scent Oil', 29.99, '/images/scent9.jpg', 1, 50);
+INSERT INTO products (name, price, image, category_id, stock_quantity, short_description)
+VALUES ('New Scent Oil', 29.99, '/public/images/scent9.jpg', 1, 50, 'A calming blend...');
 ```
 
-2. Set `is_featured = 1` to feature it on the homepage.
+Set `is_featured = 1` to feature it on the homepage.
 
 ### ➕ Add a New Quiz Option
 
-Update the quiz mapping:
+Update quiz mapping logic in `/controllers/QuizController.php`:
 
 ```php
-// quiz_mappings.php
-'confidence' => [9, 10] // Add new mood mapping
+// Example mapping
+'confidence' => [9, 10] // New mood mapping
 ```
 
-Then update the quiz form in `/views/quiz.php`.
+Update the quiz form in `/views/quiz.php`.
 
 ### 🔐 Add Admin Roles
 
-In `users` table:
+Add an `admin` role in `users` table and restrict admin URLs:
 
 ```sql
 ALTER TABLE users ADD COLUMN role ENUM('user', 'admin') DEFAULT 'user';
 ```
-
-Then restrict admin URLs:
 
 ```php
 if ($_SESSION['user']['role'] !== 'admin') {
@@ -376,9 +379,9 @@ if ($_SESSION['user']['role'] !== 'admin') {
 }
 ```
 
-### 🔌 Integrate Stripe or PayPal
+### 💳 Integrate Stripe or PayPal *(planned/future)*
 
-You can easily connect Stripe’s PHP SDK to the checkout flow in `OrderController.php`.
+Payment integration points are in place in the checkout flow for future Stripe/PayPal modules.
 
 ---
 
@@ -390,7 +393,7 @@ We welcome contributions from the community!
 
 - Follow PSR-12 PHP coding standards
 - Use semantic HTML5
-- TailwindCSS utility classes for styling
+- TailwindCSS utility classes and custom CSS for styling
 - Reusable components (header/footer)
 
 ### 🛠️ How to Contribute
@@ -404,7 +407,7 @@ We welcome contributions from the community!
 
 ### 📌 Issues & Bugs
 
-Please use the [Issues](https://github.com/your-org/the-scent/issues) tab to report bugs or request features.
+Please use the [Issues](https://github.com/sepnetflix/The-Scent-gpt6/issues) tab to report bugs or request features.
 
 ---
 
@@ -413,15 +416,7 @@ Please use the [Issues](https://github.com/your-org/the-scent/issues) tab to rep
 Distributed under the **MIT License**.  
 You are free to use, modify, and distribute this code with attribution.
 
-```
-MIT License
-
-Copyright (c) 2025
-
-Permission is hereby granted, free of charge, to any person obtaining...
-```
-
-Full license text is available in the [LICENSE](LICENSE) file.
+See the [LICENSE](LICENSE) file for full text.
 
 ---
 
@@ -457,10 +452,10 @@ This project wouldn’t be possible without:
 
 ### 🔮 Future Enhancements
 
-- Stripe/PayPal payment integration
+- Stripe/PayPal payment integration (planned)
 - Email receipts and order tracking
 - Advanced scent quiz (multi-step logic)
-- Admin panel with analytics
+- Admin panel with analytics and audit trails
 - RESTful API for mobile apps
 - React/Vue frontend version
 
@@ -472,7 +467,7 @@ Have questions or feedback?
 
 - Email: support@thescent.com
 - Twitter: [@thescentaroma](https://twitter.com/thescentaroma)
-- GitHub Issues: [Submit Bug](https://github.com/your-org/the-scent/issues)
+- GitHub Issues: [Submit Bug](https://github.com/sepnetflix/The-Scent-gpt6/issues)
 
 ---
 
