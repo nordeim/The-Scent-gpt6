@@ -1,3 +1,54 @@
+Okay, I will carefully review both `deployment_guide_updated.md` and `deployment_guide.md` section by section and merge them into a single `deployment_guide.md` file. I will prioritize content from `deployment_guide_updated.md` where sections overlap unless the other file offers clear additions or improvements. I will highlight any direct conflicts if they arise.
+
+**Analysis of Differences:**
+
+1.  **Title:** `deployment_guide_updated.md` has "(Updated)".
+2.  **Introduction:** `deployment_guide.md` has an introductory paragraph explaining the guide's purpose. `deployment_guide_updated.md` does not.
+3.  **Section 1 (Requirements):**
+    *   `_updated`: Uses a simple list format. Mentions "Ubuntu 20.04+ (recommended)", PHP 8.0+, MySQL 5.7+, Git, "Composer (optional)".
+    *   `_`: Uses a Markdown table. Mentions "Ubuntu 20.04 or newer (recommended)", PHP 8.0+, MySQL 5.7+, Apache 2.4+, "Git Latest".
+    *   *Merge Strategy:* Use the table format for clarity. Combine requirements: Ubuntu 20.04+, Apache 2.4+, PHP 8.0+, MySQL 5.7+, Git, Composer (optional).
+4.  **Section 2 (Directory Structure):** Nearly identical. `_updated` diagram is slightly cleaner. Both have the security note.
+    *   *Merge Strategy:* Use the version from `_updated`.
+5.  **Section 3 (Installation):**
+    *   3.1 (Clone): Identical.
+    *   3.2 (Permissions): `_` has an extra comment `# Allow Apache to write to uploads/ if needed`. Commands are identical.
+    *   3.3 (Create DB): `_` has a clearer introductory sentence "Log into MySQL:". SQL commands are identical.
+    *   3.4 (Import Schema):
+        *   `_updated`: `db/schema.sql`
+        *   `_`: `database/schema.sql`
+        *   *Conflict:* The path to the schema file differs (`db/` vs `database/`). This is a conflict that depends on the actual project structure.
+        *   *Merge Strategy:* Choose one path (e.g., `db/schema.sql` as it's slightly more common) and proceed, but note that this assumes the path in the chosen file is correct. *Correction:* Since the prompt asks to highlight conflicts, I will explicitly mention this difference. However, for the final output, I must choose one. Let's assume `db/schema.sql` from the `_updated` file is the correct one for the merged version.
+    *   3.5 (Configure PHP): Identical.
+6.  **Section 4 (Apache Config):** Identical content and commands.
+7.  **Section 5 (Secure Permissions):** Identical.
+8.  **Section 6 (Environment Config):**
+    *   `_`: Has an extra comment `// Or '/the-scent/public/' if in subfolder` for `BASE_URL`.
+    *   *Merge Strategy:* Use the version from `_` as the comment adds value.
+9.  **Section 7 (Testing):** Identical.
+10. **Section 8 (Docker):** Identical content (Dockerfile, docker-compose.yml, run commands). `_` has extra `---` separators which can be removed for consistency.
+11. **Section 9 (SSL):** Identical.
+12. **Section 10 (Troubleshooting):** Identical table.
+13. **Section 11 (Appendix):**
+    *   `.env` Sample: `_` has a slightly broader comment "...(if using dotenv *or custom config*)".
+    *   `config.php` Sample: Identical.
+    *   *Merge Strategy:* Use the slightly broader comment from `_` for the `.env` sample.
+14. **Ending:** Different formatting (`**End...**` vs `## ✅ End...`).
+    *   *Merge Strategy:* Use the simpler `**End of Deployment Guide**`.
+
+**Conflict Found:**
+
+*   **Section 3.4:** The path to the database schema file differs:
+    *   `deployment_guide_updated.md`: `db/schema.sql`
+    *   `deployment_guide.md`: `database/schema.sql`
+
+I will proceed with the merge using `db/schema.sql` based on the `_updated` file, but this specific path should be verified against the actual project repository structure.
+
+---
+
+**Merged File:** `deployment_guide.md`
+
+```markdown
 # The Scent - Deployment Guide (Updated)
 
 This document provides a step-by-step procedure to install, configure, and deploy **The Scent** e-commerce platform on a LAMP stack (Linux + Apache + MySQL + PHP) server.
@@ -473,3 +524,7 @@ if (defined('APP_ENV') && APP_ENV === 'development') {
 ?>
 ```
 
+---
+
+**End of Deployment Guide**
+```

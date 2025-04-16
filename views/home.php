@@ -1,5 +1,6 @@
 <?php 
-require_once __DIR__ . '/layout/header.php';
+// home.php (v2 - Merged Add-to-Cart back)
+require_once __DIR__ . '/layout/header.php'; // Uses header-fixed.php content implicitly
 echo '<!-- DEBUG: home.php loaded -->';
 $delay = 0; // Initialize delay counter for animations
 ?>
@@ -14,11 +15,30 @@ $delay = 0; // Initialize delay counter for animations
     <div class="absolute inset-0 bg-gradient-to-br from-primary/70 to-primary-dark/80 z-10"></div>
     <div class="container relative z-20 flex flex-col items-center justify-center text-center text-white px-6">
         <div data-aos="fade-down">
-            <h1 class="text-4xl md:text-5xl font-bold mb-6 font-heading">Find Your Moment of Calm</h1>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 font-heading" style="text-shadow: 0 2px 4px rgba(0,0,0,0.7);">Find Your Moment of Calm</h1>
             <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto font-body">Experience premium, natural aromatherapy crafted to enhance well-being and restore balance.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="index.php?page=quiz" class="btn btn-primary">Find Your Perfect Scent</a>
-                <a href="index.php?page=products" class="btn btn-secondary">Shop Collection</a>
+                <a href="#featured-products" class="btn btn-primary">Explore Our Collections</a>
+                <!-- Note: Original home.php had different buttons here, this matches home-fixed.php -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About/Mission Section (Moved up as per home-fixed.php) -->
+<section class="about-section py-20 bg-white" id="about">
+    <div class="container">
+        <div class="about-container grid md:grid-cols-2 gap-12 items-center">
+            <div class="about-image" data-aos="fade-left">
+                <img src="<?= file_exists($_SERVER['DOCUMENT_ROOT'] . '/public/images/about/about.jpg') ? '/public/images/about/about.jpg' : 'https://placehold.co/800x600/e9ecef/495057?text=About+The+Scent' ?>"
+                     alt="About The Scent" 
+                     class="rounded-lg shadow-xl w-full">
+            </div>
+            <div class="about-content" data-aos="fade-right">
+                <h2 class="text-3xl font-bold mb-6">Rooted in Nature, Crafted with Care</h2>
+                <p class="mb-6">At The Scent, we harness the power of nature to nurture your mental and physical well-being. Our high-quality, sustainably sourced ingredients are transformed into exquisite aromatherapy products by expert hands.</p>
+                <p class="mb-6">Our unique and creative formulations are crafted with expertise to create harmonious, balanced, and well-rounded aromatherapy products that enhance both mental and physical health.</p>
+                <a href="index.php?page=about" class="btn btn-secondary">Learn Our Story</a>
             </div>
         </div>
     </div>
@@ -31,31 +51,35 @@ $delay = 0; // Initialize delay counter for animations
         <div class="featured-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-6">
             <?php if (!empty($featuredProducts)): ?>
                 <?php foreach ($featuredProducts as $product): ?>
-                    <div class="product-card bg-white rounded-lg shadow hover:shadow-xl transition" data-aos="zoom-in">
-                        <?php if (!empty($product['display_badge'])): ?>
-                            <span class="badge badge-<?= strtolower(str_replace(' ', '-', $product['display_badge'])) ?>">
-                                <?= htmlspecialchars($product['display_badge']) ?>
-                            </span>
-                        <?php endif; ?>
+                    <div class="product-card sample-card" data-aos="zoom-in" style="border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.05); overflow:hidden;">
                         <img src="<?= htmlspecialchars($product['image'] ?? '/public/images/placeholder.jpg') ?>" 
                              alt="<?= htmlspecialchars($product['name']) ?>"
-                             class="w-full h-48 object-cover rounded"
-                             loading="lazy">
-                        <div class="product-card-content p-4">
-                            <h3 class="product-title text-xl font-semibold mt-4 mb-2"><?= htmlspecialchars($product['name']) ?></h3>
-                            <p class="product-category text-gray-600 mb-1"><?= htmlspecialchars($product['category_name']) ?></p>
-                            <p class="product-price text-primary font-bold mb-2">$<?= number_format($product['price'], 2) ?></p>
-                            <div class="product-actions flex gap-2 justify-center">
-                                <a href="index.php?page=product&id=<?= $product['id'] ?>" class="btn btn-primary">View Details</a>
+                             class="w-full h-64 object-cover" loading="lazy">
+                        <div class="product-info" style="padding:1.5rem; text-align:center;">
+                            <h3 style="margin-bottom:0.5rem; font-size:1.3rem;"><?= htmlspecialchars($product['name']) ?></h3>
+                            
+                            <!-- Short Description / Category -->
+                            <?php if (!empty($product['short_description'])): ?>
+                                <p style="font-size:0.9rem; color:#666; margin-bottom:1rem;"><?= htmlspecialchars($product['short_description']) ?></p>
+                            <?php elseif (!empty($product['category_name'])): ?>
+                                <p style="font-size:0.9rem; color:#666; margin-bottom:1rem;"><?= htmlspecialchars($product['category_name']) ?></p>
+                            <?php endif; ?>
+
+                            <!-- Product Actions: View Details and Add to Cart -->
+                            <div class="product-actions flex gap-2 justify-center mt-4">
+                                <a href="index.php?page=product&id=<?= $product['id'] ?>" class="btn btn-primary">View Details</a> 
+                                
+                                <!-- Merged Add-to-Cart block from original home.php -->
                                 <?php if ($product['stock_quantity'] > 0): ?>
                                     <button class="btn btn-secondary add-to-cart" 
                                             data-product-id="<?= $product['id'] ?>"
-                                            <?= $product['stock_quantity'] <= $product['low_stock_threshold'] ? 'data-low-stock="true"' : '' ?>>
+                                            <?= isset($product['low_stock_threshold']) && $product['stock_quantity'] <= $product['low_stock_threshold'] ? 'data-low-stock="true"' : '' ?>>
                                         Add to Cart
                                     </button>
                                 <?php else: ?>
                                     <button class="btn btn-disabled" disabled>Out of Stock</button>
                                 <?php endif; ?>
+                                <!-- End of Merged Block -->
                             </div>
                         </div>
                     </div>
@@ -67,24 +91,8 @@ $delay = 0; // Initialize delay counter for animations
                 </div>
             <?php endif; ?>
         </div>
-    </div>
-</section>
-
-<!-- Our Story Section -->
-<section class="about-section py-20 bg-white">
-    <div class="container">
-        <div class="about-container grid md:grid-cols-2 gap-12 items-center">
-            <div class="about-content" data-aos="fade-right">
-                <h2 class="text-3xl font-bold mb-6">Our Story</h2>
-                <p class="mb-6">At The Scent, we produce a range of therapeutic aromatherapy products using high-quality raw materials sourced from around the world.</p>
-                <p class="mb-6">Our unique and creative formulations are crafted with expertise to create harmonious, balanced, and well-rounded aromatherapy products that enhance both mental and physical well-being.</p>
-                <a href="index.php?page=about" class="btn btn-secondary">Learn More</a>
-            </div>
-            <div class="about-image" data-aos="fade-left">
-                <img src="<?= file_exists($_SERVER['DOCUMENT_ROOT'] . '/public/images/about/about.jpg') ? '/public/images/about/about.jpg' : 'https://placehold.co/800x600/e9ecef/495057?text=About+The+Scent' ?>" 
-                     alt="About The Scent" 
-                     class="rounded-lg shadow-xl w-full">
-            </div>
+        <div class="view-all-cta" style="text-align:center; margin-top:3rem;">
+            <a href="index.php?page=products" class="btn btn-primary">Shop All Products</a>
         </div>
     </div>
 </section>
@@ -114,11 +122,11 @@ $delay = 0; // Initialize delay counter for animations
 </section>
 
 <!-- Quiz/Finder Section -->
-<section class="quiz-section py-20 bg-light">
+<section class="quiz-section py-20 bg-light" id="finder">
     <div class="container">
         <h2 class="text-3xl font-bold text-center mb-8" data-aos="fade-up">Discover Your Perfect Scent</h2>
         <p class="text-center mb-12 text-lg" data-aos="fade-up" data-aos-delay="100">Tailor your aromatherapy experience to your mood and needs.</p>
-        <div class="grid md:grid-cols-5 gap-6 mb-8">
+        <div class="grid md:grid-cols-5 gap-6 mb-8 finder-grid">
             <div class="finder-card flex flex-col items-center p-6 bg-white rounded-lg shadow-md" data-aos="fade-up" data-aos-delay="0">
                 <i class="fas fa-leaf text-4xl text-primary mb-4"></i>
                 <h3 class="font-semibold mb-2">Relaxation</h3>
@@ -146,28 +154,29 @@ $delay = 0; // Initialize delay counter for animations
             </div>
         </div>
         <div class="text-center" data-aos="fade-up" data-aos-delay="500">
-            <a href="index.php?page=quiz" class="btn btn-primary">Take the Full Scent Quiz</a>
+            <a href="index.php?page=quiz" class="btn btn-secondary">Take the Full Scent Quiz</a>
         </div>
     </div>
 </section>
 
 <!-- Newsletter Section -->
-<section class="newsletter-section py-20 bg-light">
+<section class="newsletter-section py-20 bg-light" id="newsletter">
     <div class="container">
         <div class="max-w-2xl mx-auto text-center" data-aos="fade-up">
             <h2 class="text-3xl font-bold mb-6">Stay Connected</h2>
             <p class="mb-8">Subscribe to receive updates, exclusive offers, and aromatherapy tips.</p>
             <form id="newsletter-form" class="newsletter-form flex flex-col sm:flex-row gap-4 justify-center">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
-                <input type="email" name="email" placeholder="Enter your email" required class="flex-1 px-4 py-2 rounded-full border border-gray-300 focus:border-primary">
-                <button type="submit" class="btn btn-primary">Subscribe</button>
+                <input type="email" name="email" placeholder="Enter your email" required class="newsletter-input flex-1 px-4 py-2 rounded-full border border-gray-300 focus:border-primary">
+                <button type="submit" class="btn btn-primary newsletter-btn">Subscribe</button>
             </form>
+            <p class="newsletter-consent" style="font-size:0.8rem;opacity:0.7; margin-top:1rem;">By subscribing, you agree to our <a href="index.php?page=privacy" style="color:#A0C1B1;text-decoration:underline;">Privacy Policy</a>.</p>
         </div>
     </div>
 </section>
 
 <!-- Testimonials Section -->
-<section class="py-20 bg-white">
+<section class="py-20 bg-white" id="testimonials">
     <div class="container">
         <h2 class="text-3xl font-bold text-center mb-12" data-aos="fade-up">What Our Community Says</h2>
         <div class="testimonial-grid grid md:grid-cols-3 gap-8">
@@ -199,54 +208,76 @@ document.addEventListener('DOMContentLoaded', function() {
         once: true
     });
 
-    // Initialize Particles.js
-    particlesJS.load('particles-js', '/public/particles.json', function() {
-        console.log('Particles.js loaded');
-    });
+    // Initialize Particles.js if element exists
+    if (document.getElementById('particles-js')) {
+        particlesJS.load('particles-js', '/public/particles.json', function() {
+            console.log('Particles.js loaded');
+        });
+    }
 
-    // Handle add to cart buttons
+    // Handle add to cart buttons (Retained from original home.php JS logic)
     document.querySelectorAll('.add-to-cart').forEach(button => {
         button.addEventListener('click', async function() {
             const productId = this.dataset.productId;
             const isLowStock = this.dataset.lowStock === 'true';
             
+            // Ensure CSRF token exists before trying to send
+            const csrfTokenInput = document.querySelector('input[name="csrf_token"]');
+            const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
+
+            if (!csrfToken) {
+                 console.error('CSRF token not found!');
+                 showFlashMessage('Security token missing. Please refresh.', 'error');
+                 return; // Stop if no token
+            }
+
             try {
                 const response = await fetch('index.php?page=cart&action=add', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRF-Token': '<?= $_SESSION['csrf_token'] ?? '' ?>'
+                        // Sending CSRF token in header might be preferred depending on backend setup
+                        // 'X-CSRF-Token': csrfToken 
                     },
-                    body: `product_id=${productId}&quantity=1`
+                    // Sending CSRF token in body as fallback or if backend expects it here
+                    body: `product_id=${productId}&quantity=1&csrf_token=${encodeURIComponent(csrfToken)}` 
                 });
 
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Update cart count
-                    const cartCount = document.querySelector('.cart-count');
-                    if (cartCount) {
-                        cartCount.textContent = data.cart_count;
-                    }
+                // Check if response is JSON before parsing
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const data = await response.json();
                     
-                    // Show success message
-                    showFlashMessage('Product added to cart', 'success');
-                    
-                    // Disable button if product is now out of stock
-                    if (data.stock_status === 'out_of_stock') {
-                        this.disabled = true;
-                        this.classList.remove('btn-secondary');
-                        this.classList.add('btn-disabled');
-                        this.textContent = 'Out of Stock';
-                    }
-                    
-                    // Show low stock warning
-                    if (data.stock_status === 'low_stock' && !isLowStock) {
-                        showFlashMessage('Limited quantity available', 'info');
-                        this.dataset.lowStock = 'true';
+                    if (data.success) {
+                        // Update cart count
+                        const cartCount = document.querySelector('.cart-count');
+                        if (cartCount) {
+                            cartCount.textContent = data.cart_count; // Ensure backend sends 'cart_count'
+                        }
+                        
+                        // Show success message
+                        showFlashMessage('Product added to cart', 'success');
+                        
+                        // Disable button if product is now out of stock
+                        if (data.stock_status === 'out_of_stock') {
+                            this.disabled = true;
+                            this.classList.remove('btn-secondary');
+                            this.classList.add('btn-disabled');
+                            this.textContent = 'Out of Stock';
+                        }
+                        
+                        // Show low stock warning
+                        if (data.stock_status === 'low_stock' && !isLowStock) {
+                            showFlashMessage('Limited quantity available', 'info');
+                            this.dataset.lowStock = 'true';
+                        }
+                    } else {
+                        showFlashMessage(data.message || 'Error adding to cart', 'error');
                     }
                 } else {
-                    showFlashMessage(data.message || 'Error adding to cart', 'error');
+                    // Handle non-JSON response (e.g., HTML error page)
+                    console.error('Received non-JSON response:', await response.text());
+                    showFlashMessage('An unexpected error occurred.', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -301,4 +332,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php require_once __DIR__ . '/layout/footer.php'; ?>
+<?php require_once __DIR__ . '/layout/footer.php'; // Uses footer-fixed.php content implicitly ?>

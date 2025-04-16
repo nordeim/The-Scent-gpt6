@@ -71,21 +71,18 @@ require_once __DIR__ . '/../../includes/auth.php';
                 toggleMenu();
             });
 
-            // Close menu when clicking outside
             document.addEventListener('click', function(e) {
                 if (isMenuOpen && !e.target.closest('.main-nav')) {
                     closeMenu();
                 }
             });
 
-            // Close menu when pressing escape key
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && isMenuOpen) {
                     closeMenu();
                 }
             });
 
-            // Handle menu links
             mobileMenu?.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', closeMenu);
             });
@@ -94,35 +91,34 @@ require_once __DIR__ . '/../../includes/auth.php';
 </head>
 <body>
     <header>
-        <nav class="main-nav">
-            <div class="container">
-                <a href="index.php" class="logo">
-                    The Scent
-                    <span>Premium Aromatherapy</span>
-                </a>
-                <button class="mobile-menu-toggle md:hidden" aria-label="Toggle Menu">
-                    <i class="fas fa-bars"></i>
-                </button>
+        <nav class="main-nav sample-header">
+            <div class="container header-container">
+                <div class="logo">
+                    <a href="index.php" style="text-transform:uppercase; letter-spacing:1px;">The Scent</a>
+                    <span style="display:block; font-family:'Raleway',sans-serif; font-size:0.7rem; letter-spacing:2px; text-transform:uppercase; color:#A0C1B1; margin-top:-5px; opacity:0.8;">AROMATHERAPY</span>
+                </div>
                 <div class="nav-links" id="mobile-menu">
+                    <a href="index.php">Home</a>
                     <a href="index.php?page=products">Shop</a>
-                    <a href="index.php?page=quiz">Find Your Scent</a>
+                    <a href="index.php?page=quiz">Scent Finder</a>
                     <a href="index.php?page=about">About</a>
                     <a href="index.php?page=contact">Contact</a>
                 </div>
-                <div class="nav-actions">
+                <div class="header-icons">
+                    <a href="#" aria-label="Search"><i class="fas fa-search"></i></a>
                     <?php if (isLoggedIn()): ?>
-                        <a href="index.php?page=account" class="account-link">
-                            <i class="fas fa-user"></i>
-                            Account
-                        </a>
+                        <a href="index.php?page=account" aria-label="Account"><i class="fas fa-user"></i></a>
                     <?php else: ?>
-                        <a href="index.php?page=login">Login</a>
+                        <a href="index.php?page=login" aria-label="Login"><i class="fas fa-user"></i></a>
                     <?php endif; ?>
-                    <a href="index.php?page=cart" class="cart-link">
-                        <i class="fas fa-shopping-cart"></i>
+                    <a href="index.php?page=cart" class="cart-link" aria-label="Cart">
+                        <i class="fas fa-shopping-bag"></i>
                         <span class="cart-count"><?= isset($_SESSION['cart_count']) ? $_SESSION['cart_count'] : 0 ?></span>
                     </a>
                 </div>
+                <button class="mobile-menu-toggle md:hidden" aria-label="Toggle Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
         </nav>
     </header>
