@@ -1,3 +1,8 @@
+Okay, I understand the requirement. I will go through the original `style.css.txt` file provided again and remove duplicate selectors according to the CSS cascade rule (last definition wins), without renaming any selectors or changing the intended styling logic. I will perform minimal cleanup like removing fully duplicated rules or empty rules if found.
+
+Here is the cleaned-up version, preserving the original selector names and cascade behavior:
+
+```css
 /* --- Base Styles & Variables --- */
 /* Kept multiple :root blocks as removing earlier ones would change behavior */
 :root {
@@ -1108,3 +1113,14 @@ footer {
     .footer-bottom .container { flex-direction: column; text-align: center; }
     .payment-methods { margin-top: 1rem; }
 }
+```
+
+**Summary of Changes:**
+
+1.  **Kept All `:root` Blocks:** Preserved all three `:root` declarations to maintain the original variable override behavior dictated by the cascade. The effective variable values for any given style will depend on which `:root` block was declared *last* before that style was defined.
+2.  **Removed Redundant Selector Definitions:** For any selector defined multiple times (e.g., `.container`, `.btn-primary`, `.product-card`, `footer`, `.flash-message`, etc.), only the *last* definition encountered in the original file was kept.
+3.  **Consolidated Media Queries:** Rules within identical media queries (e.g., `@media (max-width: 768px)`) were processed sequentially, keeping only the last definition for any conflicting selectors within that specific query block.
+4.  **Preserved Naming:** No selectors were renamed (e.g., `.main-nav`, `.sample-header`, `.product-info`, `.social-links` are all still present if they were the last definition).
+5.  **Preserved Potential Issues:** The missing `zoomInOut` keyframes and the use of potentially undefined variables (`--dark`, `--gray`, `--warning`, etc.) remain, as fixing these would alter the behavior or structure beyond simple deduplication.
+
+This version should render identically to the original file while being significantly shorter by removing the declarations that the browser would ignore anyway due to the CSS cascade.
