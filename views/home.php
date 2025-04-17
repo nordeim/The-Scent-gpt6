@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize Particles.js if element exists
     if (document.getElementById('particles-js')) {
-        particlesJS.load('particles-js', '/public/particles.json', function() {
+        particlesJS.load('particles-js', '/particles.json', function() {
             console.log('Particles.js loaded');
         });
     }
