@@ -322,7 +322,7 @@ body {
     width: 100%;
     height: 100%;
     /* Uses --primary and --primary-dark from 2nd :root block */
-    background-image: linear-gradient(35deg, var(--primary) 0%, var(--primary-dark) 100%);
+    /* background-image: linear-gradient(35deg, var(--primary) 0%, var(--primary-dark) 100%); */
 }
 
 /* Final effective .hero-media style (Only defined once) */
