@@ -1,0 +1,28 @@
+Refused to load the stylesheet '<URL>' because it violates the following Content Security Policy directive: "style-src 'self' 'unsafe-inline'". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback.
+
+the-scent.com/:11 Refused to load the stylesheet 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Montserrat:wght@400;500;600&family=Raleway:wght@400;500;600&display=swap' because it violates the following Content Security Policy directive: "style-src 'self' 'unsafe-inline'". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback.
+
+the-scent.com/:14 Refused to load the stylesheet 'https://unpkg.com/aos@next/dist/aos.css' because it violates the following Content Security Policy directive: "style-src 'self' 'unsafe-inline'". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback.
+
+the-scent.com/:15 Refused to load the stylesheet 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css' because it violates the following Content Security Policy directive: "style-src 'self' 'unsafe-inline'". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback.
+
+the-scent.com/:1 Refused to load the stylesheet 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Montserrat:wght@400;500;600&family=Raleway:wght@400;500;600&display=swap' because it violates the following Content Security Policy directive: "style-src 'self' 'unsafe-inline'". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback.
+
+the-scent.com/:1 Refused to load the stylesheet 'https://unpkg.com/aos@next/dist/aos.css' because it violates the following Content Security Policy directive: "style-src 'self' 'unsafe-inline'". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback.
+
+the-scent.com/:1 Refused to load the stylesheet 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css' because it violates the following Content Security Policy directive: "style-src 'self' 'unsafe-inline'". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback.
+
+the-scent.com/:1 Refused to load the script 'https://cdn.tailwindcss.com/' because it violates the following Content Security Policy directive: "script-src 'self' https://js.stripe.com 'unsafe-inline'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.
+
+(index):18 Uncaught ReferenceError: tailwind is not defined
+    at (index):18:9
+the-scent.com/:1 Refused to load the script 'https://unpkg.com/aos@next/dist/aos.js' because it violates the following Content Security Policy directive: "script-src 'self' https://js.stripe.com 'unsafe-inline'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.
+
+the-scent.com/:1 Refused to load the script 'https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js' because it violates the following Content Security Policy directive: "script-src 'self' https://js.stripe.com 'unsafe-inline'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.
+
+the-scent.com/:1 Refused to load the script 'https://unpkg.com/aos@next/dist/aos.js' because it violates the following Content Security Policy directive: "script-src 'self' https://js.stripe.com 'unsafe-inline'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.
+
+(index):392 Uncaught ReferenceError: AOS is not defined
+    at HTMLDocument.<anonymous> ((index):392:5)
+(index):624 Uncaught ReferenceError: AOS is not defined
+    at HTMLDocument.<anonymous> ((index):624:13)

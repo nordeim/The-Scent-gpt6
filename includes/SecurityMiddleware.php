@@ -11,7 +11,8 @@ class SecurityMiddleware {
         header("X-XSS-Protection: 1; mode=block");
         header("X-Content-Type-Options: nosniff");
         header("Referrer-Policy: strict-origin-when-cross-origin");
-        header("Content-Security-Policy: default-src 'self'; script-src 'self' https://js.stripe.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src https://js.stripe.com; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com");
+	// TEMPORARRILY disabled
+	// header("Content-Security-Policy: default-src 'self'; script-src 'self' https://js.stripe.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src https://js.stripe.com; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com");
         
         // Set secure cookie parameters
         if (session_status() === PHP_SESSION_NONE) {
