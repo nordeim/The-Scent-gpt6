@@ -12,7 +12,7 @@ $delay = 0; // Initialize delay counter for animations
         <source src="/videos/hero.mp4" type="video/mp4">
         <img src="/images/scent5.jpg" alt="Calming Nature" class="w-full h-full object-cover" />
     </video>
-    <div class="absolute inset-0 bg-gradient-to-br from-primary/70 to-primary-dark/80 z-10"></div>
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/40 to-primary-dark/50 z-10"></div>
     <div class="container relative z-20 flex flex-col items-center justify-center text-center text-white px-6">
         <div data-aos="fade-down">
             <h1 class="text-4xl md:text-5xl font-bold mb-6 font-heading" style="text-shadow: 0 2px 4px rgba(0,0,0,0.7);">Find Your Moment of Calm</h1>

@@ -352,7 +352,7 @@ body {
     right: 0;
     bottom: 0;
     /* Uses final --primary and --primary-dark from 3rd :root */
-    background: linear-gradient(45deg, rgba(26, 77, 90, 0.7), rgba(22, 66, 73, 0.7)); /* From 2nd definition */
+    /* background: linear-gradient(45deg, rgba(26, 77, 90, 0.7), rgba(22, 66, 73, 0.7)); */ /* From 2nd definition */
     z-index: 1; /* From 2nd definition (overrides 1st) */
 }
 
