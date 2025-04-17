@@ -104,10 +104,10 @@ coverage/
 *.lcov
 *.lcov.info
 .nyc_output/
-public/videos/
-public/images/
-apache_logs/
-logs/
+#public/videos/
+#public/images/
+#apache_logs/
+#logs/
 
 # Test results #
 ################

@@ -8,9 +8,9 @@ $delay = 0; // Initialize delay counter for animations
 <!-- Hero Section with Video Background -->
 <section class="hero-section relative min-h-screen flex items-center justify-center overflow-hidden">
     <div id="particles-js" class="absolute inset-0 z-0"></div>
-    <video class="absolute inset-0 w-full h-full object-cover z-[-1]" autoplay muted loop playsinline poster="/public/images/scent5.jpg">
-        <source src="/public/videos/hero.mp4" type="video/mp4">
-        <img src="/public/images/scent5.jpg" alt="Calming Nature" class="w-full h-full object-cover" />
+    <video class="absolute inset-0 w-full h-full object-cover z-[-1]" autoplay muted loop playsinline poster="/images/scent5.jpg">
+        <source src="/videos/hero.mp4" type="video/mp4">
+        <img src="/images/scent5.jpg" alt="Calming Nature" class="w-full h-full object-cover" />
     </video>
     <div class="absolute inset-0 bg-gradient-to-br from-primary/70 to-primary-dark/80 z-10"></div>
     <div class="container relative z-20 flex flex-col items-center justify-center text-center text-white px-6">
@@ -29,7 +29,7 @@ $delay = 0; // Initialize delay counter for animations
     <div class="container">
         <div class="about-container grid md:grid-cols-2 gap-12 items-center">
             <div class="about-image" data-aos="fade-left">
-                <img src="<?= file_exists($_SERVER['DOCUMENT_ROOT'] . '/public/images/about/about.jpg') ? '/public/images/about/about.jpg' : 'https://placehold.co/800x600/e9ecef/495057?text=About+The+Scent' ?>"
+                <img src="<?= file_exists($_SERVER['DOCUMENT_ROOT'] . '/images/about.jpg') ? '/images/about.jpg' : 'https://placehold.co/800x600/e9ecef/495057?text=About+The+Scent' ?>"
                      alt="About The Scent" 
                      class="rounded-lg shadow-xl w-full">
             </div>
@@ -52,7 +52,7 @@ $delay = 0; // Initialize delay counter for animations
                 <?php foreach ($featuredProducts as $product): ?>
                     <!-- Apply suggested card structure/style -->
                     <div class="product-card sample-card" data-aos="zoom-in" style="border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.05); overflow:hidden;">
-                        <img src="<?= htmlspecialchars($product['image'] ?? '/public/images/placeholder.jpg') ?>" 
+                        <img src="<?= htmlspecialchars($product['image'] ?? '/images/placeholder.jpg') ?>" 
                              alt="<?= htmlspecialchars($product['name']) ?>"
                              class="w-full h-64 object-cover" loading="lazy">
                         <div class="product-info" style="padding:1.5rem; text-align:center;">

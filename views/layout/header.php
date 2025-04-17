@@ -36,7 +36,7 @@ require_once __DIR__ . '/../../includes/auth.php';
             }
         }
     </script>
-    <link rel="stylesheet" href="/public/css/style.css">
+    <link rel="stylesheet" href="/css/style.css">
     
     <!-- Scripts -->
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
